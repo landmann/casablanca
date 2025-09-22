@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "lib": ["DOM", "ES2021", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "strict": true,
+    "allowJs": false,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@casablanca/ui": ["packages/ui/src/index.ts"],
+      "@casablanca/ui/*": ["packages/ui/src/*"],
+      "@casablanca/api": ["packages/api/src/index.ts"],
+      "@casablanca/api/*": ["packages/api/src/*"],
+      "@casablanca/auth": ["packages/auth/src/index.ts"],
+      "@casablanca/auth/*": ["packages/auth/src/*"],
+      "@casablanca/config/*": ["packages/config/*"],
+      "@casablanca/types": ["packages/types/src/index.ts"],
+      "@casablanca/types/*": ["packages/types/src/*"]
+    }
+  },
+  "include": ["packages", "apps", "convex", "tooling"],
+  "exclude": ["node_modules", "**/node_modules", "dist", "build"]
+}

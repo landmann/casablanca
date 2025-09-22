@@ -1,0 +1,13 @@
+node_modules
+.pnpm-store
+.turbo
+.next
+out
+build
+coverage
+.DS_Store
+.env
+.env.*
+expo
+android
+ios

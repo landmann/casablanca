@@ -1,0 +1,37 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@casablanca/ui": ["../../packages/ui/src/index.ts"],
+      "@casablanca/ui/*": ["../../packages/ui/src/*"],
+      "@casablanca/api": ["../../packages/api/src/index.ts"],
+      "@casablanca/api/*": ["../../packages/api/src/*"],
+      "@casablanca/auth": ["../../packages/auth/src/index.ts"],
+      "@casablanca/auth/*": ["../../packages/auth/src/*"],
+      "@casablanca/types": ["../../packages/types/src/index.ts"],
+      "@casablanca/types/*": ["../../packages/types/src/*"]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
