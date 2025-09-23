@@ -10,7 +10,7 @@ const handler = (req: NextRequest) =>
     router: appRouter,
     endpoint: "/api/trpc",
     req,
-    createContext: () => createTRPCContext({ req, resHeaders: new Headers() }),
+    createContext: (opts) => createTRPCContext(opts),
     onError({ error }) {
       console.error("TRPC Error", error);
     },

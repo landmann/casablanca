@@ -7,6 +7,7 @@ import type {
 
 import { env } from "@/env";
 import { getConvexClient } from "./convexClient";
+import { api } from "@casablanca/api/convex";
 
 config({
   credentials: () => env.FAL_KEY,
@@ -77,21 +78,43 @@ const buildPrompt = (listing: ConvexListing, kind: MediaGenerationRequest["kind"
 };
 
 const extractAssetUrl = (response: FalGenerationResponse): string | undefined => {
-  return (
-    response?.image?.url ||
-    response?.images?.[0]?.url ||
-    response?.output?.[0]?.content?.[0]?.url ||
-    response?.output?.[0]?.url ||
-    response?.result?.image?.url ||
-    undefined
-  );
+  if (response?.image?.url) {
+    return response.image.url;
+  }
+
+  const firstImageWithUrl = response?.images?.find((image) => image?.url)?.url;
+  if (firstImageWithUrl) {
+    return firstImageWithUrl;
+  }
+
+  if (response?.output) {
+    for (const entry of response.output) {
+      if (!entry) {
+        continue;
+      }
+
+      if ("url" in entry && entry.url) {
+        return entry.url;
+      }
+
+      if ("content" in entry && entry.content) {
+        for (const nested of entry.content) {
+          if (nested?.url) {
+            return nested.url;
+          }
+        }
+      }
+    }
+  }
+
+  return response?.result?.image?.url;
 };
 
 export const generateMediaFromFal = async (
   request: MediaGenerationRequest
 ): Promise<MediaGenerationResult> => {
   const convex = getConvexClient();
-  const listing = (await convex.query("listings:byId", { id: request.listingId })) as
+  const listing = (await convex.query(api.listings.byId, { id: request.listingId })) as
     | ConvexListing
     | null;
 
@@ -121,7 +144,8 @@ export const generateMediaFromFal = async (
     metadata: {
       prompt,
       model,
-      response,
+      requestId: response?.request_id ?? "",
+      responseJson: JSON.stringify(response ?? {}),
     },
     createdAt: new Date().toISOString(),
   };

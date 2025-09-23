@@ -5,11 +5,8 @@ const listings = defineTable({
   agentId: v.string(),
   title: v.string(),
   slug: v.string(),
-  status: v.literal("draft")
-    .or(v.literal("active"))
-    .or(v.literal("sold"))
-    .or(v.literal("archived")),
-  sourceType: v.literal("manual").or(v.literal("firecrawl")),
+  status: v.union(v.literal("draft"), v.literal("active"), v.literal("sold"), v.literal("archived")),
+  sourceType: v.union(v.literal("manual"), v.literal("firecrawl")),
   sourceUrl: v.optional(v.string()),
   location: v.object({
     street: v.string(),
@@ -31,11 +28,7 @@ const listings = defineTable({
   media: v.array(
     v.object({
       url: v.string(),
-      type: v.literal("photo")
-        .or(v.literal("video"))
-        .or(v.literal("floor_plan"))
-        .or(v.literal("virtual_tour"))
-        .or(v.literal("document")),
+      type: v.union(v.literal("photo"), v.literal("video"), v.literal("floor_plan"), v.literal("virtual_tour"), v.literal("document")),
       caption: v.optional(v.string()),
       tags: v.optional(v.array(v.string())),
     })
@@ -48,11 +41,8 @@ const listings = defineTable({
 
 const mediaJobs = defineTable({
   listingId: v.id("listings"),
-  kind: v.literal("social_graphic")
-    .or(v.literal("flyer"))
-    .or(v.literal("short_form_video"))
-    .or(v.literal("property_description")),
-  status: v.literal("pending").or(v.literal("completed")).or(v.literal("failed")),
+  kind: v.union(v.literal("social_graphic"), v.literal("flyer"), v.literal("short_form_video"), v.literal("property_description")),
+  status: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed")),
   resultUrl: v.optional(v.string()),
   metadata: v.optional(v.any()),
   error: v.optional(v.string()),

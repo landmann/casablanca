@@ -7,7 +7,7 @@ let stripeClient: Stripe | null = null;
 export const getStripe = () => {
   if (!stripeClient) {
     stripeClient = new Stripe(env.STRIPE_SECRET_KEY, {
-      apiVersion: "2024-12-18",
+      apiVersion: "2025-08-27.basil",
     });
   }
 

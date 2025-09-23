@@ -7,17 +7,18 @@ import {
 } from "../schema/listings";
 import { mediaGenerationRequestSchema } from "../schema/media";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { api } from "../convex";
 
 export const listingsRouter = router({
   create: protectedProcedure
     .input(listingCreateInputSchema)
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.session?.user?.id) {
+      if (!ctx.session?.userId) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
 
-      const listingId = await ctx.convex.mutation("listings:create", {
-        agentId: ctx.session.user.id,
+      const listingId = await ctx.convex.mutation(api.listings.create, {
+        agentId: ctx.session.userId,
         ...input,
       });
 
@@ -26,7 +27,7 @@ export const listingsRouter = router({
   list: protectedProcedure
     .input(listingFiltersSchema.optional())
     .query(async ({ ctx, input }) => {
-      const listings = await ctx.convex.query("listings:list", input ?? {});
+      const listings = await ctx.convex.query(api.listings.list, input ?? {});
       return listings;
     }),
   byId: protectedProcedure
@@ -36,7 +37,7 @@ export const listingsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const listing = await ctx.convex.query("listings:byId", input);
+      const listing = await ctx.convex.query(api.listings.byId, input);
 
       if (!listing) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
@@ -55,5 +56,15 @@ export const listingsRouter = router({
 export const listingsPublicRouter = router({
   listPublic: publicProcedure
     .input(listingFiltersSchema.optional())
-    .query(async ({ ctx, input }) => ctx.convex.query("listings:listPublic", input ?? {})),
+    .query(async ({ ctx, input }) => {
+      const status =
+        input?.status === "active" || input?.status === "sold"
+          ? input.status
+          : undefined;
+
+      return ctx.convex.query(api.listings.listPublic, {
+        status,
+        search: input?.search,
+      });
+    }),
 });

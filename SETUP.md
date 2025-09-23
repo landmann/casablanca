@@ -56,9 +56,9 @@ pnpm install
 2. Authenticate locally and initialise the project:
    ```bash
    pnpm dlx convex login
-   pnpm dlx convex init casablanca
+   pnpm dlx convex dev --once --configure=new
    ```
-   The init command seeds `convex.json`, `.env` keys, and the `_generated` folder.
+   The configure command seeds `convex.json`, `.env` keys, and the `_generated` folder.
 3. Update `CONVEX_URL`, `CONVEX_DEPLOYMENT`, and `NEXT_PUBLIC_CONVEX_URL` with the values returned by the CLI.
 4. During development keep the Convex dev server running so codegen stays fresh:
    ```bash

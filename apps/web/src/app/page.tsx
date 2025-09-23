@@ -16,6 +16,9 @@ import {
   CardTitle,
 } from "@casablanca/ui";
 
+const studioRoute = "/app/studio";
+const demoRoute = "/book-demo";
+
 const coreFeatures = [
   {
     title: "Listing-aware media studio",
@@ -73,12 +76,18 @@ export default function HomePage() {
           </div>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link href="/app/studio" className="inline-flex items-center gap-2">
+              <Link
+                href={{ pathname: studioRoute }}
+                className="inline-flex items-center gap-2"
+              >
                 Launch studio <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/book-demo" className="inline-flex items-center gap-2">
+              <Link
+                href={{ pathname: demoRoute }}
+                className="inline-flex items-center gap-2"
+              >
                 Book a walkthrough
               </Link>
             </Button>

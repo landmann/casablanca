@@ -5,7 +5,6 @@ export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     BETTER_AUTH_SECRET: z.string().min(32),
-    NEXT_PUBLIC_APP_URL: z.string().url(),
     CONVEX_DEPLOYMENT: z.string().min(1),
     CONVEX_URL: z.string().url(),
     FAL_KEY: z.string().min(1),
@@ -18,6 +17,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),
     NEXT_PUBLIC_CONVEX_URL: z.string().url(),
+    NEXT_PUBLIC_CONVEX_SITE_URL: z.string().url(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
@@ -35,6 +35,7 @@ export const env = createEnv({
     POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
     POSTHOG_HOST: process.env.POSTHOG_HOST,
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
+    NEXT_PUBLIC_CONVEX_SITE_URL: process.env.NEXT_PUBLIC_CONVEX_SITE_URL,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
