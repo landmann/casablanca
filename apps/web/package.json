@@ -32,6 +32,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.63.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "stripe": "^18.5.0",
     "superjson": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
