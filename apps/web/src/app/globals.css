@@ -3,48 +3,38 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 222 47% 11%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --radius: 0.75rem;
-}
+  /* Canvas (primary brand background) — #FFFBF2 */
+  --background: 41 100% 97%;
+  /* Warm off-black body text — #1F1A14 */
+  --foreground: 33 22% 10%;
 
-.dark {
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 11%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222 47% 11%;
-  --secondary: 219 37% 18%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217 33% 20%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 217 33% 20%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217 33% 20%;
-  --input: 217 33% 20%;
-  --ring: 212.7 26.8% 83.9%;
+  /* Cards sit on canvas; distinction comes from border hairline */
+  --card: 41 100% 97%;
+  --card-foreground: 33 22% 10%;
+  --popover: 41 100% 97%;
+  --popover-foreground: 33 22% 10%;
+
+  /* Copper accent (secondary brand color) — #9C6137 — used for CTAs, links, emphasis */
+  --primary: 25 48% 41%;
+  --primary-foreground: 41 100% 97%;
+
+  /* Subtle cream variant for secondary surfaces */
+  --secondary: 41 60% 94%;
+  --secondary-foreground: 33 22% 10%;
+
+  --muted: 41 40% 93%;
+  --muted-foreground: 33 20% 36%;
+
+  --accent: 41 60% 94%;
+  --accent-foreground: 25 48% 41%;
+
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 41 100% 97%;
+
+  /* Hairline — #E8DFCC */
+  --border: 41 38% 86%;
+  --input: 41 38% 86%;
+  --ring: 25 48% 41%;
   --radius: 0.75rem;
 }
 
@@ -62,5 +52,11 @@ body {
 
   body {
     @apply bg-background text-foreground antialiased;
+  }
+
+  /* Instrument Serif looks best with slightly tightened tracking at display sizes */
+  .font-serif {
+    letter-spacing: -0.01em;
+    font-feature-settings: "liga" 1, "dlig" 1;
   }
 }

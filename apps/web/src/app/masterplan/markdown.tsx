@@ -9,20 +9,25 @@ export function Markdown({ children }: { children: string }) {
         components={{
           h1: (props) => (
             <h1
-              className="mt-10 scroll-mt-24 text-3xl font-semibold tracking-tight first:mt-0"
+              className="mt-10 scroll-mt-24 font-serif text-4xl font-normal leading-tight first:mt-0"
               {...props}
             />
           ),
           h2: (props) => (
             <h2
-              className="mt-10 scroll-mt-24 border-b border-border pb-2 text-2xl font-semibold tracking-tight"
+              className="mt-10 scroll-mt-24 border-b border-border pb-3 font-serif text-3xl font-normal leading-tight"
               {...props}
             />
           ),
           h3: (props) => (
-            <h3 className="mt-8 scroll-mt-24 text-xl font-semibold" {...props} />
+            <h3
+              className="mt-8 scroll-mt-24 font-serif text-2xl font-normal leading-snug"
+              {...props}
+            />
           ),
-          h4: (props) => <h4 className="mt-6 text-lg font-semibold" {...props} />,
+          h4: (props) => (
+            <h4 className="mt-6 font-serif text-xl font-normal" {...props} />
+          ),
           p: (props) => <p className="leading-7 text-foreground/90" {...props} />,
           ul: (props) => (
             <ul className="ml-6 list-disc space-y-2 marker:text-muted-foreground" {...props} />

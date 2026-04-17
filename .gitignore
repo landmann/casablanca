@@ -11,8 +11,9 @@ expo
 android
 ios
 
+.vercel
+
 .projects/cache
 .projects/vault
 .env
 .env.local
-.vercel

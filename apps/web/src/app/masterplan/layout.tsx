@@ -18,7 +18,7 @@ export default function MasterPlanLayout({ children }: { children: ReactNode }) 
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 Internal
               </p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+              <h1 className="mt-1 font-serif text-3xl font-normal leading-tight">
                 Casablanca masterplan
               </h1>
             </div>

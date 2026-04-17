@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@casablanca/ui";
 
-const studioRoute = "/app/studio";
+const studioRoute = "/app/onboarding";
 const demoRoute = "/book-demo";
 
 const coreFeatures = [
@@ -67,7 +67,7 @@ export default function HomePage() {
             <span className="mx-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Real-estate media that ships itself
             </span>
-            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-balance font-serif text-5xl font-normal leading-[1.05] sm:text-6xl lg:text-7xl">
               Casablanca blends media production and CRM workflows so your listings hit the market fully armed.
             </h1>
             <p className="text-balance text-base text-muted-foreground sm:text-lg">
@@ -120,7 +120,7 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Coming next
             </span>
-            <h2 className="max-w-2xl text-3xl font-semibold tracking-tight lg:text-4xl">
+            <h2 className="max-w-2xl font-serif text-4xl font-normal leading-tight lg:text-5xl">
               We are laying the plumbing for a modern referral-ready CRM that understands listings.
             </h2>
             <p className="max-w-2xl text-base text-muted-foreground">
