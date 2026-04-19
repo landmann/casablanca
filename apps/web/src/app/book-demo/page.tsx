@@ -65,26 +65,26 @@ export default function BookDemoPage() {
           <div className="absolute right-[-5rem] top-0 h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(232,223,204,0.92),transparent_64%)] blur-3xl" />
         </div>
 
-        <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
+        <header className="relative mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8 sm:py-6">
           <Link
             href="/"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Casablanca
           </Link>
-          <Button asChild variant="outline" className="rounded-full px-5">
+          <Button asChild variant="outline" className="rounded-full px-5 sm:px-6">
             <Link href="/masterplan">Open masterplan</Link>
           </Button>
         </header>
 
-        <main className="relative mx-auto w-full max-w-6xl px-6 pb-20 pt-4 sm:px-10">
-          <section className="grid gap-8 lg:grid-cols-[1fr_0.82fr] lg:items-start">
+        <main className="relative mx-auto w-full max-w-6xl px-5 pb-20 pt-4 sm:px-8">
+          <section className="grid gap-8 lg:gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] xl:items-start">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/85 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.28em] text-muted-foreground">
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-background/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground sm:px-4 sm:text-[11px] sm:tracking-[0.28em]">
                 <CalendarClock className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                 Live walkthrough
               </div>
-              <h1 className="mt-6 font-serif text-5xl font-normal leading-[1.02] text-foreground sm:text-6xl">
+              <h1 className="mt-6 max-w-4xl text-balance font-serif text-[3rem] font-normal leading-[1.02] text-foreground sm:text-[4.15rem] xl:text-[4.75rem]">
                 See Casablanca in the context that matters:
                 <br />
                 real agency workflow.
@@ -95,7 +95,7 @@ export default function BookDemoPage() {
                 becomes a trusted operating layer inside an actual office.
               </p>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {agenda.map((item) => {
                   const Icon = item.icon;
 
@@ -117,14 +117,14 @@ export default function BookDemoPage() {
               </div>
             </div>
 
-            <Card className="rounded-[30px] border-border/80 bg-[linear-gradient(180deg,rgba(255,251,242,0.96),rgba(248,241,229,0.88))] shadow-[0_30px_90px_rgba(31,26,20,0.10)]">
+            <Card className="rounded-[28px] border-border/80 bg-[linear-gradient(180deg,rgba(255,251,242,0.96),rgba(248,241,229,0.88))] shadow-[0_30px_90px_rgba(31,26,20,0.10)] sm:rounded-[30px]">
               <CardHeader className="space-y-4">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-primary">
                   <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
                   Bring this
                 </div>
                 <div>
-                  <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                  <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                     The best walkthrough starts with your actual operating mess.
                   </CardTitle>
                   <CardDescription className="mt-3 text-sm leading-6">
@@ -160,10 +160,10 @@ export default function BookDemoPage() {
             </Card>
           </section>
 
-          <section className="mt-12 grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
-            <Card className="rounded-[30px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)]">
+          <section className="mt-12 grid gap-6 xl:grid-cols-[1.04fr_0.96fr]">
+            <Card className="rounded-[28px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)] sm:rounded-[30px]">
               <CardHeader>
-                <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                   Tell us what we should focus on
                 </CardTitle>
                 <CardDescription className="mt-2 text-sm leading-6">
@@ -205,7 +205,7 @@ export default function BookDemoPage() {
                       required
                     />
                   </label>
-                  <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap">
                     <Button type="submit" size="lg" className="rounded-full px-7">
                       Request a session
                     </Button>
@@ -230,9 +230,9 @@ export default function BookDemoPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-[30px] border-primary/25 bg-primary/10">
+            <Card className="rounded-[28px] border-primary/25 bg-primary/10 sm:rounded-[30px]">
               <CardHeader>
-                <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                   What you should expect from the session
                 </CardTitle>
                 <CardDescription className="mt-2 text-sm leading-6 text-foreground/75">

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -18,21 +19,27 @@ const studioRoute = "/app/studio";
 const demoRoute = "/book-demo";
 const masterplanRoute = "/masterplan";
 
+export const metadata: Metadata = {
+  title: "Casablanca",
+  description:
+    "Casablanca es el SO operativo independiente para agencias inmobiliarias: control de respuesta, operativa en vivo y prueba para captar propietarios.",
+};
+
 const marketSignals = [
   {
-    label: "Response control",
-    value: "Sub-2m SLA",
-    detail: "Lead arrives, reply goes out, ownership stays visible.",
+    label: "Control de respuesta",
+    value: "SLA < 2 min",
+    detail: "Entra el lead, sale la respuesta y la propiedad del hilo sigue visible.",
   },
   {
-    label: "Workflow layer",
-    value: "Inbox-first",
-    detail: "WhatsApp, portal forwarding, and handoff in one command surface.",
+    label: "Capa operativa",
+    value: "La bandeja manda",
+    detail: "WhatsApp, reenvío de portales y traspaso en una sola superficie.",
   },
   {
-    label: "Expansion path",
-    value: "Seller acquisition",
-    detail: "Proof-of-performance becomes the next instruction engine.",
+    label: "Ruta de expansión",
+    value: "Captación",
+    detail: "La prueba de rendimiento se convierte en el siguiente motor de captación.",
   },
 ] as const;
 
@@ -41,70 +48,70 @@ const platformPillars = [
     icon: MessageSquareText,
     title: "Responde",
     summary:
-      "Answer every meaningful lead quickly, qualify context, and escalate cleanly when a human should step in.",
-    details: ["First response", "AI-to-human handoff", "Visible conversation ownership"],
+      "Responde rápido a cada lead con intención, cualifica el contexto y escala limpio cuando debe entrar una persona.",
+    details: ["Primera respuesta", "Traspaso IA-humano", "Propiedad visible del hilo"],
   },
   {
     icon: Workflow,
-    title: "Inbox control",
+    title: "Control de bandeja",
     summary:
-      "Turn messy inbound demand into a managed workflow with routing, assignment, SLA visibility, and weekly proof.",
-    details: ["WhatsApp-first", "Manager accountability", "Weekly operating rhythm"],
+      "Convierte la demanda entrante desordenada en un flujo gestionado con enrutado, asignación, visibilidad de SLA e informe semanal.",
+    details: ["WhatsApp primero", "Responsabilidad directiva", "Ritmo operativo semanal"],
   },
   {
     icon: ChartNoAxesColumnIncreasing,
-    title: "Seller engine",
+    title: "Motor de captación",
     summary:
-      "Use the performance data from buyer-side execution to win more instructions and create higher-value agency rituals.",
-    details: ["Valuation capture", "Owner nurture", "Proof pages and presentations"],
+      "Usa los datos de ejecución del lado comprador para ganar más captaciones y crear rituales de agencia de mayor valor.",
+    details: ["Captación de valoraciones", "Seguimiento de propietarios", "Páginas y presentaciones de prueba"],
   },
 ] as const;
 
 const trustArchitecture = [
   {
     icon: ShieldCheck,
-    title: "Clear ownership",
+    title: "Propiedad clara",
     body:
-      "Casablanca shows exactly when AI is active, when a human owns the thread, and why a handoff happened.",
+      "Casablanca muestra exactamente cuándo actúa la IA, cuándo una persona toma el hilo y por qué se produjo el traspaso.",
   },
   {
     icon: Radar,
-    title: "Weekly proof",
+    title: "Prueba semanal",
     body:
-      "Managers get a measurable view of response speed, coverage, missed demand, and what changed this week.",
+      "Dirección ve con números la velocidad de respuesta, la cobertura, la demanda perdida y qué cambió esta semana.",
   },
   {
     icon: Landmark,
-    title: "Independent position",
+    title: "Posición independiente",
     body:
-      "Built for agencies that want a serious workflow layer beside the portal ecosystem, not inside it.",
+      "Pensado para agencias que quieren una capa operativa seria junto al ecosistema de portales, no dentro de él.",
   },
 ] as const;
 
 const operatingLoop = [
   {
     step: "01",
-    title: "Inbound lead arrives",
+    title: "Entra el lead",
     description:
-      "Portal forwarding, WhatsApp, and web sources land inside the same operating layer.",
+      "Los reenvíos de portales, WhatsApp y la web aterrizan en la misma capa operativa.",
   },
   {
     step: "02",
-    title: "Response is controlled",
+    title: "La respuesta queda bajo control",
     description:
-      "Casablanca drafts or sends the first reply fast, then routes the thread based on confidence and rules.",
+      "Casablanca redacta o envía la primera respuesta con rapidez y luego enruta el hilo según reglas y confianza.",
   },
   {
     step: "03",
-    title: "Team workflow stays visible",
+    title: "La operativa del equipo sigue visible",
     description:
-      "Assignment, takeover, SLA pressure, and manager accountability stay explicit instead of buried in chat.",
+      "Asignación, traspaso, presión de SLA y responsabilidad directiva siguen explícitos, no enterrados en chats.",
   },
   {
     step: "04",
-    title: "Performance becomes proof",
+    title: "El rendimiento se convierte en prueba",
     description:
-      "The agency turns operating data into weekly reviews, seller-facing proof, and the next growth wedge.",
+      "La agencia transforma los datos operativos en revisiones semanales, prueba para propietarios y la siguiente palanca de crecimiento.",
   },
 ] as const;
 
@@ -119,107 +126,108 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[linear-gradient(rgba(31,26,20,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(31,26,20,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.16),transparent_72%)]" />
         </div>
 
-        <header className="relative mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 sm:px-10 lg:px-12">
-          <Link href="/" className="inline-flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/80 font-serif text-xl text-foreground shadow-sm">
+        <header className="relative mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8 sm:py-6 lg:px-12">
+          <Link href="/" className="inline-flex min-w-0 items-center gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background/80 font-serif text-lg text-foreground shadow-sm sm:h-11 sm:w-11 sm:text-xl">
               C
             </span>
-            <span className="text-sm font-medium uppercase tracking-[0.26em] text-muted-foreground">
+            <span className="truncate text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground sm:text-sm sm:tracking-[0.26em]">
               Casablanca
             </span>
           </Link>
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
+          <nav className="hidden items-center gap-6 text-sm text-muted-foreground lg:flex">
             <a href="#platform" className="transition-colors hover:text-foreground">
-              Platform
+              Plataforma
             </a>
             <a href="#trust" className="transition-colors hover:text-foreground">
-              Trust
+              Confianza
             </a>
             <a href="#masterplan" className="transition-colors hover:text-foreground">
               Masterplan
             </a>
           </nav>
-          <Button asChild className="rounded-full px-6">
-            <Link href={demoRoute}>Book a walkthrough</Link>
+          <Button asChild className="rounded-full px-5 sm:px-6">
+            <Link href={demoRoute}>Reservar una demo</Link>
           </Button>
         </header>
 
-        <main className="relative mx-auto w-full max-w-7xl px-6 pb-20 pt-8 sm:px-10 lg:px-12 lg:pb-28">
-          <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <main className="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-6 sm:px-8 sm:pt-8 lg:px-12 lg:pb-28">
+          <section className="grid gap-8 lg:gap-10 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,28rem)] xl:items-start">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/85 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.28em] text-muted-foreground shadow-sm backdrop-blur">
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/80 bg-background/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-sm backdrop-blur sm:px-4 sm:text-[11px] sm:tracking-[0.28em]">
                 <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                Independent revenue OS for agencies
+                SO operativo independiente para agencias
               </div>
-              <h1 className="mt-6 max-w-4xl font-serif text-5xl font-normal leading-[0.98] text-foreground sm:text-6xl lg:text-7xl">
-                Own the first response.
+              <h1 className="mt-6 max-w-4xl text-balance font-serif text-[3rem] font-normal leading-[0.98] text-foreground sm:text-[4.25rem] xl:text-[5.25rem]">
+                Controla la primera respuesta.
                 <br />
-                Control the live workflow.
+                Ordena la operativa diaria.
                 <br />
-                Win the next seller.
+                Gana la próxima captación.
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                Casablanca gives real-estate agencies a WhatsApp-first command layer for speed-to-lead,
-                routing, accountability, and proof-of-performance. It is built to become the operating
-                standard around inbound demand, not another media toy or bloated CRM clone.
+                Casablanca da a las agencias inmobiliarias una capa operativa, con WhatsApp en el
+                centro, para responder antes, enrutar mejor, exigir responsabilidad y demostrar
+                rendimiento. Está diseñada para convertirse en el estándar alrededor de la demanda
+                entrante, no en otro juguete de IA ni en un CRM inflado.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" className="rounded-full px-7">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap">
+                <Button asChild size="lg" className="rounded-full px-7 sm:w-auto">
                   <Link href={demoRoute} className="inline-flex items-center gap-2">
-                    Book a walkthrough
+                    Reservar una demo
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="rounded-full px-7">
+                <Button asChild variant="outline" size="lg" className="rounded-full px-7 sm:w-auto">
                   <Link href={masterplanRoute} className="inline-flex items-center gap-2">
                     <BookOpen className="h-4 w-4" aria-hidden="true" />
-                    Read the masterplan
+                    Leer el masterplan
                   </Link>
                 </Button>
-                <Button asChild variant="ghost" size="lg" className="rounded-full px-6">
+                <Button asChild variant="ghost" size="lg" className="rounded-full px-6 sm:w-auto sm:justify-start">
                   <Link href={studioRoute} className="inline-flex items-center gap-2">
-                    See the product preview
+                    Ver el producto
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </Button>
               </div>
-              <div className="mt-8 flex flex-wrap gap-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              <div className="mt-8 flex flex-wrap gap-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:gap-3 sm:text-xs sm:tracking-[0.2em]">
                 <span className="rounded-full border border-border bg-background/70 px-3 py-2">
-                  Spain first
+                  España primero
                 </span>
                 <span className="rounded-full border border-border bg-background/70 px-3 py-2">
-                  Portugal next
+                  Portugal después
                 </span>
                 <span className="rounded-full border border-border bg-background/70 px-3 py-2">
-                  Italy on the clock
+                  Italia en el radar
                 </span>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute -inset-6 rounded-[32px] bg-[radial-gradient(circle_at_top_left,rgba(156,97,55,0.18),transparent_48%),radial-gradient(circle_at_bottom_right,rgba(111,94,74,0.14),transparent_34%)] blur-2xl" />
-              <Card className="relative overflow-hidden rounded-[32px] border-border/80 bg-background/92 shadow-[0_34px_100px_rgba(31,26,20,0.12)]">
+            <div className="relative mx-auto w-full max-w-[34rem] xl:mx-0 xl:justify-self-end">
+              <div className="absolute -inset-4 rounded-[32px] bg-[radial-gradient(circle_at_top_left,rgba(156,97,55,0.18),transparent_48%),radial-gradient(circle_at_bottom_right,rgba(111,94,74,0.14),transparent_34%)] blur-2xl sm:-inset-6" />
+              <Card className="relative overflow-hidden rounded-[28px] border-border/80 bg-background/92 shadow-[0_34px_100px_rgba(31,26,20,0.12)] sm:rounded-[32px]">
                 <CardHeader className="border-b border-border/80 pb-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                        Command layer
+                        Capa operativa
                       </p>
-                      <CardTitle className="mt-2 font-serif text-3xl font-normal leading-tight">
-                        Madrid office overview
+                      <CardTitle className="mt-2 font-serif text-[1.9rem] font-normal leading-tight sm:text-3xl">
+                        Resumen: oficina Madrid
                       </CardTitle>
                     </div>
                     <div className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-primary">
-                      Live
+                      En vivo
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-5 p-6">
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
                     {[
-                      { label: "Median first response", value: "01:42" },
-                      { label: "Leads recovered this week", value: "+18" },
-                      { label: "Weekly proof memos", value: "12 sent" },
+                      { label: "Mediana primera respuesta", value: "01:42" },
+                      { label: "Leads recuperados esta semana", value: "+18" },
+                      { label: "Informes semanales enviados", value: "12" },
                     ].map((metric) => (
                       <div
                         key={metric.label}
@@ -235,45 +243,45 @@ export default function HomePage() {
                     ))}
                   </div>
 
-                  <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div className="grid gap-4 2xl:grid-cols-[1.1fr_0.9fr]">
                     <div className="rounded-[26px] border border-border/80 bg-[linear-gradient(180deg,rgba(255,251,242,0.98),rgba(248,241,229,0.88))] p-5">
-                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                        <span>Live inbox</span>
-                        <span>Idealista forwarding</span>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
+                        <span>Bandeja en vivo</span>
+                        <span>Reenvío Idealista</span>
                       </div>
                       <div className="mt-5 space-y-4">
                         <div className="rounded-2xl border border-border/80 bg-background p-4 shadow-sm">
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <p className="text-sm font-semibold text-foreground">Ana Garcia</p>
+                              <p className="text-sm font-semibold text-foreground">Ana García</p>
                               <p className="mt-1 text-sm text-muted-foreground">
-                                Interested in a 2-bed flat in Chamberi. Wants a viewing this week.
+                                Interesada en un piso de 2 habitaciones en Chamberí. Quiere visita esta semana.
                               </p>
                             </div>
                             <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                              New lead
+                              Nuevo lead
                             </span>
                           </div>
                         </div>
                         <div className="rounded-2xl border border-primary/25 bg-primary/10 p-4">
                           <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary">
-                            AI first response sent in 48s
+                            IA respondió en 48 s
                           </p>
                           <p className="mt-2 text-sm leading-6 text-foreground/90">
-                            Confirmed preferred area, budget band, and scheduling intent. Confidence
-                            remained high until listing-specific availability was requested.
+                            Confirmó zona preferida, tramo de presupuesto e intención de agenda. La
+                            confianza siguió alta hasta que se pidió disponibilidad concreta del inmueble.
                           </p>
                         </div>
                         <div className="rounded-2xl border border-border/80 bg-background p-4">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-foreground">Human takeover</p>
+                            <p className="text-sm font-semibold text-foreground">Intervención humana</p>
                             <span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                               Marta Ruiz
                             </span>
                           </div>
                           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            Handoff triggered when the lead asked for a same-week viewing window and
-                            mortgage timing advice.
+                            Se activó el traspaso cuando la interesada pidió una ventana de visita
+                            para esta semana y dudas sobre tiempos de hipoteca.
                           </p>
                         </div>
                       </div>
@@ -282,13 +290,13 @@ export default function HomePage() {
                     <div className="space-y-4">
                       <div className="rounded-[26px] border border-border/80 bg-secondary/55 p-5">
                         <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                          Manager proof memo
+                          Informe para dirección
                         </p>
                         <div className="mt-4 space-y-3">
                           {[
-                            "92% of leads answered inside SLA",
-                            "3 threads escalated for human local context",
-                            "Seller page launched for 5 owner opportunities",
+                            "92% de leads atendidos dentro del SLA",
+                            "3 conversaciones escaladas por contexto local",
+                            "Página de captación lanzada para 5 propietarios potenciales",
                           ].map((item) => (
                             <div
                               key={item}
@@ -301,14 +309,15 @@ export default function HomePage() {
                       </div>
                       <div className="rounded-[26px] border border-primary/25 bg-primary/10 p-5">
                         <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary">
-                          Expansion wedge
+                          Palanca de expansión
                         </p>
                         <p className="mt-3 font-serif text-2xl font-normal leading-tight text-foreground">
-                          Daily buyer-side execution becomes seller-side proof.
+                          La ejecución diaria con compradores se convierte en prueba para captar propietarios.
                         </p>
                         <p className="mt-3 text-sm leading-6 text-foreground/85">
-                          Casablanca compounds from response control into owner capture, proof pages,
-                          and listing presentation assets grounded in real operating data.
+                          Casablanca compone desde el control de respuesta hacia captación de
+                          propietarios, páginas de prueba y materiales comerciales basados en datos
+                          operativos reales.
                         </p>
                       </div>
                     </div>
@@ -318,7 +327,7 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section className="mt-10 grid gap-4 sm:grid-cols-3">
+          <section className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {marketSignals.map((signal, index) => (
               <div
                 key={signal.label}
@@ -339,19 +348,19 @@ export default function HomePage() {
           <section id="platform" className="mt-24">
             <div className="max-w-3xl">
               <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                What Casablanca actually does
+                Lo que Casablanca hace de verdad
               </p>
               <h2 className="mt-4 font-serif text-4xl font-normal leading-tight text-foreground sm:text-5xl">
-                A workflow company first. A media layer only where it helps the workflow.
+                Primero, una empresa de operativa. La capa visual solo cuando refuerza la operativa.
               </h2>
               <p className="mt-4 text-base leading-8 text-muted-foreground sm:text-lg">
-                The company plan is explicit about sequence. Casablanca starts on the path of money,
-                becomes part of daily operating behavior, then expands into seller acquisition and a
-                selective marketplace. The UI should make that obvious.
+                El plan de compañía es explícito con el orden. Casablanca entra por el camino del
+                dinero, se vuelve parte del comportamiento diario de la oficina y después se expande
+                hacia captación y marketplace selectivo. La interfaz debe dejar eso claro.
               </p>
             </div>
 
-            <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {platformPillars.map((pillar, index) => {
                 const Icon = pillar.icon;
 
@@ -392,18 +401,18 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section id="trust" className="mt-24 grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <section id="trust" className="mt-24 grid gap-8 xl:grid-cols-[0.95fr_1.05fr] xl:items-start">
             <div className="rounded-[30px] border border-border/80 bg-[linear-gradient(180deg,rgba(255,251,242,0.94),rgba(248,241,229,0.84))] p-6 shadow-[0_28px_90px_rgba(31,26,20,0.08)] sm:p-8">
               <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                Why this feels credible
+                Por qué esto transmite confianza
               </p>
               <h3 className="mt-4 font-serif text-4xl font-normal leading-tight text-foreground">
-                Confidence comes from visible control, not louder AI claims.
+                La confianza viene del control visible, no de promesas más ruidosas sobre IA.
               </h3>
               <p className="mt-4 text-base leading-8 text-muted-foreground">
-                Harvey and Legora both present themselves as serious workflow infrastructure: clear
-                outcomes, constrained product language, and strong trust signals. Casablanca needs the
-                same posture for agencies.
+                Harvey y Legora se presentan como infraestructura seria de operativa: resultados
+                claros, lenguaje de producto contenido y señales fuertes de confianza. Casablanca
+                necesita la misma postura para las agencias.
               </p>
               <div className="mt-8 space-y-4">
                 {trustArchitecture.map((item) => {
@@ -432,7 +441,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="rounded-[30px] border border-border/80 bg-background/92 p-6 shadow-[0_24px_70px_rgba(31,26,20,0.07)] sm:p-8">
                 <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                  The loop we are trying to own
+                  El bucle que queremos controlar
                 </p>
                 <div className="mt-6 space-y-4">
                   {operatingLoop.map((item) => (
@@ -459,25 +468,25 @@ export default function HomePage() {
                 className="rounded-[30px] border border-primary/25 bg-primary/10 p-6 sm:p-8"
               >
                 <p className="text-xs font-medium uppercase tracking-[0.28em] text-primary">
-                  Strategy access
+                  Acceso a estrategia
                 </p>
                 <h3 className="mt-4 font-serif text-4xl font-normal leading-tight text-foreground">
-                  Every authored markdown file now has a home under `/masterplan`.
+                  Cada markdown redactado ya tiene su sitio en `/masterplan`.
                 </h3>
                 <p className="mt-4 max-w-2xl text-base leading-8 text-foreground/85">
-                  The route now covers the full `MASTER-PLAN` set alongside the repo-authored
-                  documentation that supports implementation and operating context.
+                  La ruta reúne el conjunto completo de `MASTER-PLAN` junto con la documentación del
+                  repositorio que sostiene la ejecución y el contexto operativo.
                 </p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                   <Button asChild size="lg" className="rounded-full px-7">
                     <Link href={masterplanRoute} className="inline-flex items-center gap-2">
-                      Open the reading room
+                      Abrir la sala de lectura
                       <BookOpen className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="lg" className="rounded-full px-7">
                     <Link href={demoRoute} className="inline-flex items-center gap-2">
-                      Talk through the rollout
+                      Hablar del despliegue
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>

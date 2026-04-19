@@ -133,14 +133,14 @@ export default function StudioPage() {
         </div>
 
         <header className="relative border-b border-border/80 bg-background/88 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-8 sm:flex-row sm:items-end sm:justify-between sm:px-10">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/85 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-background/85 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground sm:text-[11px] sm:tracking-[0.24em]">
                 <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                 Product preview
               </div>
               <div>
-                <h1 className="font-serif text-4xl font-normal leading-tight text-foreground sm:text-5xl">
+                <h1 className="font-serif text-[2.8rem] font-normal leading-tight text-foreground sm:text-[4rem]">
                   Agency command center
                 </h1>
                 <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
@@ -149,7 +149,7 @@ export default function StudioPage() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-col gap-3 sm:items-end">
+            <div className="flex flex-col gap-3 lg:items-end">
               <Button asChild className="rounded-full px-6">
                 <Link href="/book-demo" className="inline-flex items-center gap-2">
                   Book a walkthrough
@@ -166,7 +166,7 @@ export default function StudioPage() {
           </div>
         </header>
 
-        <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-10 sm:px-10">
+        <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-8 sm:px-8 sm:py-10">
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {quickActions.map((action) => {
               const Icon = action.icon;
@@ -200,11 +200,11 @@ export default function StudioPage() {
             })}
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-            <Card className="rounded-[30px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)]">
-              <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+            <Card className="rounded-[28px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)] sm:rounded-[30px]">
+              <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                 <div>
-                  <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                  <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                     Live inbox queue
                   </CardTitle>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -246,16 +246,16 @@ export default function StudioPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-[30px] border-primary/25 bg-primary/10">
+            <Card className="rounded-[28px] border-primary/25 bg-primary/10 sm:rounded-[30px]">
               <CardHeader>
-                <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                   Office scorecard
                 </CardTitle>
                 <p className="mt-2 text-sm leading-6 text-foreground/75">
                   The metrics that decide whether the workflow is healthy, trusted, and worth expanding.
                 </p>
               </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 {scorecard.map((item) => (
                   <div
                     key={item.label}
@@ -273,10 +273,10 @@ export default function StudioPage() {
             </Card>
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">
-            <Card className="rounded-[30px] border-border/80 bg-[linear-gradient(180deg,rgba(255,251,242,0.96),rgba(248,241,229,0.88))] shadow-[0_24px_70px_rgba(31,26,20,0.07)]">
+          <section className="grid gap-6 xl:grid-cols-[0.96fr_1.04fr]">
+            <Card className="rounded-[28px] border-border/80 bg-[linear-gradient(180deg,rgba(255,251,242,0.96),rgba(248,241,229,0.88))] shadow-[0_24px_70px_rgba(31,26,20,0.07)] sm:rounded-[30px]">
               <CardHeader>
-                <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                   Workflow highlights
                 </CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -301,9 +301,9 @@ export default function StudioPage() {
             </Card>
 
             <div className="grid gap-6">
-              <Card className="rounded-[30px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)]">
+              <Card className="rounded-[28px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)] sm:rounded-[30px]">
                 <CardHeader>
-                  <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                  <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                     Recent activity
                   </CardTitle>
                 </CardHeader>
@@ -336,9 +336,9 @@ export default function StudioPage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-[30px] border-primary/25 bg-primary/10">
+              <Card className="rounded-[28px] border-primary/25 bg-primary/10 sm:rounded-[30px]">
                 <CardHeader>
-                  <CardTitle className="font-serif text-3xl font-normal leading-tight">
+                  <CardTitle className="font-serif text-[2rem] font-normal leading-tight sm:text-3xl">
                     Deployment checklist
                   </CardTitle>
                   <p className="mt-2 text-sm leading-6 text-foreground/75">
