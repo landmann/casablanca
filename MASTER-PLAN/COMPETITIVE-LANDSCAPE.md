@@ -1,4 +1,4 @@
-# Casablanca — Competitive Landscape
+# Casedra — Competitive Landscape
 
 **Date:** 2026-04-18  
 **Purpose:** define the competitive map around the company we are actually building, not the one we used to describe
@@ -76,7 +76,7 @@ Media is a bundled proof layer, not our category.
 
 ### Our position
 
-Casablanca must become the strongest independent workflow layer for:
+Casedra must become the strongest independent workflow layer for:
 
 - first response
 - lead routing
@@ -109,7 +109,7 @@ This is the primary wedge.
 
 Most seller tools are not connected tightly enough to the live operational workflow of the agency.
 
-Casablanca can bridge:
+Casedra can bridge:
 
 - owner lead capture
 - owner nurture
@@ -182,8 +182,8 @@ Then we selectively absorb CRM territory around the workflow.
 
 ### Where the opening is
 
-Agencies do not need Casablanca to replace those services.
-They need Casablanca to route those services intelligently inside existing workflow.
+Agencies do not need Casedra to replace those services.
+They need Casedra to route those services intelligently inside existing workflow.
 
 ### Our position
 
@@ -211,7 +211,7 @@ That means the real competition is:
 This matters because the product has to beat not only software, but habit.
 It also has to avoid thinking like a local feature vendor.
 
-Casablanca should judge itself against companies that:
+Casedra should judge itself against companies that:
 
 - own a mission-critical workflow
 - deploy deeply into customer environments
@@ -242,11 +242,11 @@ If we get this order wrong, the company becomes easier to copy and harder to def
 
 ## 4. Strategic Buyer Map
 
-To maximize a year-3 outcome, Casablanca should become relevant to at least one of these buyer classes:
+To maximize a year-3 outcome, Casedra should become relevant to at least one of these buyer classes:
 
 ### 1. Portal operators and their owners
 
-They care if Casablanca:
+They care if Casedra:
 
 - influences lead routing
 - controls agency workflow
@@ -255,7 +255,7 @@ They care if Casablanca:
 
 ### 2. Software consolidators
 
-They care if Casablanca:
+They care if Casedra:
 
 - has strong retention
 - has benchmark data
@@ -263,7 +263,7 @@ They care if Casablanca:
 
 ### 3. Financial or growth buyers
 
-They care if Casablanca:
+They care if Casedra:
 
 - reaches scale with efficient unit economics
 - has a credible partner layer
@@ -318,4 +318,4 @@ If they copy media, that matters much less.
 
 ## 7. The One Line To Remember
 
-**Casablanca does not need to be the best real-estate software suite. It needs to become the most important independent workflow layer in the agency's path to revenue.**
+**Casedra does not need to be the best real-estate software suite. It needs to become the most important independent workflow layer in the agency's path to revenue.**

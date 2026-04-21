@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, BookOpenCheck } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@casablanca/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@casedra/ui";
 
 import { DOCS, GROUP_ORDER } from "./docs";
 

@@ -1,6 +1,6 @@
-# Casablanca Setup Guide
+# Casedra Setup Guide
 
-Casablanca is a Turborepo that hosts the web studio (Next.js), the mobile companion (Expo), shared UI/auth/api packages, and Convex functions. This guide walks through configuring the stack end-to-end.
+Casedra is a Turborepo that hosts the web studio (Next.js), the mobile companion (Expo), shared UI/auth/api packages, and Convex functions. This guide walks through configuring the stack end-to-end.
 
 ## Monorepo layout
 
@@ -79,7 +79,7 @@ pnpm install
 ## Fal.ai
 
 1. Create an API key at [https://fal.ai](https://fal.ai) and store it as `FAL_KEY`.
-2. The helper in `apps/web/src/server/media.ts` maps Casablanca media types to Fal models (Flux for imagery, Runway/LLM placeholders for video & copy). Update model IDs as you settle on specific Fal endpoints.
+2. The helper in `apps/web/src/server/media.ts` maps Casedra media types to Fal models (Flux for imagery, Runway/LLM placeholders for video & copy). Update model IDs as you settle on specific Fal endpoints.
 3. Responses are stored in Convex (`mediaJobs`) and surfaced through TRPC.
 
 ## Firecrawl

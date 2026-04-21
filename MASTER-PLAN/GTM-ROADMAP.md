@@ -1,4 +1,4 @@
-# Casablanca — Go-To-Market Roadmap
+# Casedra — Go-To-Market Roadmap
 
 **Date:** 2026-04-18  
 **Purpose:** define how we acquire, onboard, expand, and retain agencies fast enough to make the 36-month plan real
@@ -7,7 +7,7 @@
 
 ## 1. GTM Thesis
 
-Casablanca will not win with broad top-of-funnel marketing first.
+Casedra will not win with broad top-of-funnel marketing first.
 It will win by:
 
 1. deploying into live workflows
@@ -71,7 +71,7 @@ The first ICP is narrow on purpose.
 
 ### Why this matters
 
-This lets Casablanca sell:
+This lets Casedra sell:
 
 - recovered revenue
 - team control
@@ -392,20 +392,20 @@ Take selected deals only if they do not distort the roadmap.
 
 ## 15. Category Discipline
 
-Casablanca should market itself like the standard for professional agency operations, not like a generic AI startup.
+Casedra should market itself like the standard for professional agency operations, not like a generic AI startup.
 
 That means:
 
 - publish proof, not hype
 - make weekly reports and benchmarks feel inevitable
 - turn the best agencies into examples of the standard
-- let the market associate Casablanca with calm, reliable revenue workflow
+- let the market associate Casedra with calm, reliable revenue workflow
 
 ---
 
 ## 16. What The Team Must Not Forget
 
-Casablanca does not become a `EUR1B` company because agencies think it is interesting.
+Casedra does not become a `EUR1B` company because agencies think it is interesting.
 
 It becomes a `EUR1B` company if agencies rebuild daily revenue behavior around it.
 

@@ -2,12 +2,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, BookOpenText, Files, FolderKanban } from "lucide-react";
 
+import { DOCS } from "./docs";
 import { MasterPlanTabs } from "./tabs";
 
 export const metadata = {
-  title: "Masterplan · Casablanca",
+  title: "Masterplan · Casedra",
   description:
-    "Casablanca strategy, operating docs, and repository markdowns in a single reading surface.",
+    "Casedra strategy, operating docs, and repository markdowns in a single reading surface.",
   robots: { index: false, follow: false },
 };
 
@@ -29,7 +30,7 @@ export default function MasterPlanLayout({ children }: { children: ReactNode }) 
               </div>
               <div className="space-y-3">
                 <h1 className="max-w-3xl font-serif text-4xl font-normal leading-[1.02] text-foreground sm:text-5xl">
-                  The Casablanca plan stack, in one place.
+                  The Casedra plan stack, in one place.
                 </h1>
                 <p className="max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
                   Strategy, operating doctrine, execution plans, and project docs. This surface now
@@ -60,7 +61,9 @@ export default function MasterPlanLayout({ children }: { children: ReactNode }) 
                   <Files className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                   Coverage
                 </div>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">17 docs</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+                  {DOCS.length} docs
+                </p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   The full repo-authored markdown set surfaced inside `/masterplan`.
                 </p>

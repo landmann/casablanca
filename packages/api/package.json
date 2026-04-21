@@ -1,5 +1,5 @@
 {
-  "name": "@casablanca/api",
+  "name": "@casedra/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     }
   },
   "dependencies": {
-    "@casablanca/types": "workspace:*",
+    "@casedra/types": "workspace:*",
     "@trpc/server": "^11.5.1",
     "convex": "^1.27.2",
     "superjson": "^2.2.1",

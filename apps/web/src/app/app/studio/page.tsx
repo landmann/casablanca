@@ -13,7 +13,9 @@ import {
   Workflow,
 } from "lucide-react";
 
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@casablanca/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@casedra/ui";
+
+import { generalEmail, generalEmailHref } from "../../marketing-data";
 
 const quickActions = [
   {
@@ -46,7 +48,7 @@ const quickActions = [
       "Track deployment status, at-risk accounts, and who needs training before go-live.",
     icon: Users,
     cta: "View rollout tasks",
-    href: "mailto:product@casablanca.cloud",
+    href: generalEmailHref,
   },
 ] as const;
 
@@ -85,7 +87,7 @@ const workflowCards = [
   {
     title: "Response control",
     body:
-      "Casablanca answered 92% of meaningful leads inside SLA this week and escalated only when local context was required.",
+      "Casedra answered 92% of meaningful leads inside SLA this week and escalated only when local context was required.",
     footer: "Updated 12 minutes ago",
   },
   {
@@ -144,7 +146,7 @@ export default function StudioPage() {
                   Agency command center
                 </h1>
                 <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-                  A preview of Casablanca as the live workflow layer around inbound demand, team
+                  A preview of Casedra as the live workflow layer around inbound demand, team
                   routing, and seller-side proof. This is the product posture the public UI now points to.
                 </p>
               </div>
@@ -280,7 +282,7 @@ export default function StudioPage() {
                   Workflow highlights
                 </CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  The surfaces that make Casablanca feel like infrastructure rather than a novelty layer.
+                  The surfaces that make Casedra feel like infrastructure rather than a novelty layer.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -360,11 +362,17 @@ export default function StudioPage() {
                     </div>
                   ))}
                   <Button asChild variant="secondary" className="rounded-full px-6">
-                    <Link href="mailto:product@casablanca.cloud" className="inline-flex items-center gap-2">
+                    <Link href={generalEmailHref} className="inline-flex items-center gap-2">
                       Talk to the deployment team
                       <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>
+                  <p className="text-xs leading-6 text-foreground/70">
+                    Contact:{" "}
+                    <Link href={generalEmailHref} className="underline">
+                      {generalEmail}
+                    </Link>
+                  </p>
                 </CardContent>
               </Card>
             </div>

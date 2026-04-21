@@ -66,11 +66,11 @@ body {
 
 @layer utilities {
   .animate-enter {
-    animation: casablanca-enter 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: casedra-enter 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
 
-@keyframes casablanca-enter {
+@keyframes casedra-enter {
   from {
     opacity: 0;
     transform: translateY(18px);

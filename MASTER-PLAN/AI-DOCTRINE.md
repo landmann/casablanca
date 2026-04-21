@@ -1,7 +1,7 @@
-# Casablanca — AI Doctrine
+# Casedra — AI Doctrine
 
 **Date:** 2026-04-18  
-**Purpose:** define how Casablanca should build AI so it becomes durable infrastructure, not a short-lived feature company
+**Purpose:** define how Casedra should build AI so it becomes durable infrastructure, not a short-lived feature company
 
 ---
 
@@ -16,7 +16,7 @@ They won because they became:
 - hard to replace operationally
 - stronger with every customer deployment
 
-Casablanca should use the same playbook.
+Casedra should use the same playbook.
 
 The goal is not to become "an AI startup for real estate."
 The goal is to become the professional operating standard for agency revenue workflows in Spain, then Portugal and Italy.
@@ -25,7 +25,7 @@ The goal is to become the professional operating standard for agency revenue wor
 
 ## 1. Sell Workflow, Not AI
 
-Customers should buy Casablanca because it helps them:
+Customers should buy Casedra because it helps them:
 
 - answer leads faster
 - recover missed demand
@@ -33,7 +33,7 @@ Customers should buy Casablanca because it helps them:
 - win more seller instructions
 - attach partner revenue more intelligently
 
-They should not buy Casablanca because:
+They should not buy Casedra because:
 
 - the prompts look clever
 - the outputs sound futuristic
@@ -47,7 +47,7 @@ If the workflow value is weak, the AI story is cosmetic.
 
 The winning AI products do not ask professionals to leave their real workflow.
 
-For Casablanca, the real workflow is:
+For Casedra, the real workflow is:
 
 - WhatsApp
 - portal lead forwarding
@@ -55,13 +55,13 @@ For Casablanca, the real workflow is:
 - manager review
 - seller follow-up
 
-If Casablanca requires a parallel habit before it creates value, adoption will slow and conviction will drop.
+If Casedra requires a parallel habit before it creates value, adoption will slow and conviction will drop.
 
 ---
 
 ## 3. Trust Architecture Before Autonomy
 
-Casablanca should never confuse autonomy with value.
+Casedra should never confuse autonomy with value.
 
 The system must make it obvious:
 
@@ -79,7 +79,7 @@ The product should feel safe, legible, and accountable before it feels impressiv
 
 The first 200 accounts should not be treated like customers buying finished software.
 
-They are how Casablanca learns:
+They are how Casedra learns:
 
 - setup friction
 - routing edge cases
@@ -96,7 +96,7 @@ They are part of the moat.
 
 Every serious AI workflow company develops an evaluation discipline.
 
-Casablanca should ship AI only when the team can measure:
+Casedra should ship AI only when the team can measure:
 
 - response quality
 - escalation quality
@@ -110,7 +110,7 @@ No important workflow should depend on prompt intuition alone.
 
 ## 6. The Benchmark Network Is A Core Asset
 
-Casablanca should instrument the workflow so it can understand:
+Casedra should instrument the workflow so it can understand:
 
 - response times by agency and city
 - lead-source quality
@@ -126,7 +126,7 @@ It should become product, reporting, GTM proof, and strategic leverage.
 
 ## 7. Productize The Best Teams' Playbooks
 
-The best agencies will teach Casablanca how top performers:
+The best agencies will teach Casedra how top performers:
 
 - reply
 - qualify
@@ -143,7 +143,7 @@ It is software plus the best operational playbooks in the market.
 
 ## 8. Keep Model Optionality, Own The Workflow
 
-Casablanca should assume frontier models will improve fast and become easier to access.
+Casedra should assume frontier models will improve fast and become easier to access.
 
 So the moat is not:
 
@@ -167,7 +167,7 @@ Model providers should stay replaceable whenever possible.
 
 Enduring software becomes a habit.
 
-Casablanca should create rituals such as:
+Casedra should create rituals such as:
 
 - the daily inbox review
 - the weekly manager performance memo
@@ -183,7 +183,7 @@ That is how product becomes culture.
 
 Idealista became part of market behavior because it became a default reference point.
 
-Casablanca should aim to define:
+Casedra should aim to define:
 
 - what "fast enough" response looks like
 - what a professional handoff looks like
@@ -191,7 +191,7 @@ Casablanca should aim to define:
 - what credible seller proof looks like
 - what good owner follow-up looks like
 
-If Casablanca sets the standard, it becomes harder to displace than a normal software vendor.
+If Casedra sets the standard, it becomes harder to displace than a normal software vendor.
 
 ---
 
@@ -219,10 +219,10 @@ If Casablanca sets the standard, it becomes harder to displace than a normal sof
 
 - speak like the standard for professional agency operations
 - avoid generic "AI magic" positioning
-- make Casablanca feel calm, precise, and authoritative
+- make Casedra feel calm, precise, and authoritative
 
 ---
 
 ## The One Line To Remember
 
-**Casablanca should build AI the way category-defining workflow companies do: embedded, trusted, deployment-heavy, benchmark-led, and hard to replace.**
+**Casedra should build AI the way category-defining workflow companies do: embedded, trusted, deployment-heavy, benchmark-led, and hard to replace.**

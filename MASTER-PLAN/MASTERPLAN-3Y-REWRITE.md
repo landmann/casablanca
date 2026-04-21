@@ -1,4 +1,4 @@
-# Casablanca — Read First
+# Casedra — Read First
 
 **Date:** 2026-04-18  
 **Purpose:** this is the shortest possible version of the company plan. Every other document in `MASTER-PLAN` expands this one.
@@ -7,7 +7,7 @@
 
 ## Objective
 
-Build Casablanca into the most important independent revenue workflow layer for real-estate agencies in Spain, then extend that position into Portugal and Italy fast enough to force a `EUR1B` strategic outcome by `2029-04-17`.
+Build Casedra into the most important independent revenue workflow layer for real-estate agencies in Spain, then extend that position into Portugal and Italy fast enough to force a `EUR1B` strategic outcome by `2029-04-17`.
 
 This is not the same as saying:
 
@@ -17,7 +17,7 @@ This is not the same as saying:
 
 The actual bet is narrower and stronger:
 
-**If Casablanca becomes strategically unavoidable in the three geographies where idealista is strongest, a `EUR1B` outcome becomes plausible.**
+**If Casedra becomes strategically unavoidable in the three geographies where idealista is strongest, a `EUR1B` outcome becomes plausible.**
 
 ---
 
@@ -33,14 +33,14 @@ In shorthand:
 
 ## What Company We Are Building
 
-Casablanca is:
+Casedra is:
 
 - an AI-native revenue operating system for agencies
 - a WhatsApp-first and inbox-first workflow product
 - a seller-acquisition engine once the inbox is trusted
 - a selective marketplace only after we control workflow
 
-Casablanca is not:
+Casedra is not:
 
 - an AI media app with delusions of grandeur
 - a generic CRM clone
@@ -70,7 +70,7 @@ The inbox becomes the place where leads arrive, get routed, get tracked, and get
 
 ### 3. Win seller instructions
 
-Once Casablanca owns the buyer-side response workflow, it expands into valuation requests, owner nurture, proof-of-performance pages, and listing-presentation generation.
+Once Casedra owns the buyer-side response workflow, it expands into valuation requests, owner nurture, proof-of-performance pages, and listing-presentation generation.
 
 ### 4. Add a selective marketplace
 
@@ -108,7 +108,7 @@ It is not the core business.
    If the inbox is not used weekly, the account is weak no matter what it pays.
 
 3. **Revenue proof**
-   Casablanca must show agencies recovered leads, faster response times, stronger seller capture, or clearer ROI.
+   Casedra must show agencies recovered leads, faster response times, stronger seller capture, or clearer ROI.
 
 ---
 
@@ -136,7 +136,7 @@ These are not optional expansions. They are part of the thesis.
 
 ## What Must Be True By Year 3
 
-By `2029-04-17`, Casablanca should look like this:
+By `2029-04-17`, Casedra should look like this:
 
 - `5,500+` active paying agencies
 - strong footholds in Spain, Portugal, and Italy
@@ -147,7 +147,7 @@ By `2029-04-17`, Casablanca should look like this:
 - a selective partner marketplace generating meaningful revenue
 - enough strategic leverage that a large platform, software consolidator, or financial buyer has to care
 
-If by year 3 Casablanca is still mostly:
+If by year 3 Casedra is still mostly:
 
 - a media tool
 - a loose bundle of SMB features

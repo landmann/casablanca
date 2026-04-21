@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
-import { cn } from "@casablanca/ui";
+import { cn } from "@casedra/ui";
 
 import { DOCS, GROUP_ORDER } from "./docs";
 

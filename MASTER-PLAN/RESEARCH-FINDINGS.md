@@ -1,4 +1,4 @@
-# Casablanca — Research Findings And Product Implications
+# Casedra — Research Findings And Product Implications
 
 **Date:** 2026-04-18  
 **Purpose:** durable findings that should shape product, GTM, pricing, and hiring
@@ -34,7 +34,7 @@ The most important structural fact is still that the dominant portal and the dom
 ### What this means
 
 - agencies are renting distribution from one side and workflow from the other
-- Casablanca has a credible independent story
+- Casedra has a credible independent story
 - migration and coexistence tooling are strategically important
 
 ### Product implication
@@ -91,7 +91,7 @@ The first 200 agencies should be onboarded with hands-on help.
 
 ## 5. The Inbox Is The Real Retention Hook
 
-The inbox is where Casablanca becomes unavoidable.
+The inbox is where Casedra becomes unavoidable.
 
 ### What this means
 
@@ -111,7 +111,7 @@ A customer only counts if the inbox is active.
 
 ## 6. Seller Acquisition Should Move Up
 
-Once Casablanca helps agencies work buyer leads better, the next adjacent problem is seller acquisition.
+Once Casedra helps agencies work buyer leads better, the next adjacent problem is seller acquisition.
 
 ### Why
 
@@ -131,12 +131,12 @@ The account-expansion narrative should move from "better lead response" to "more
 
 ## 7. Trust Is A Commercial Feature, Not A Brand Layer
 
-The market has a trust problem, but Casablanca should not answer it first with a consumer portal.
+The market has a trust problem, but Casedra should not answer it first with a consumer portal.
 It should answer it first by helping agencies prove responsiveness and professionalism.
 
 ### Product implication
 
-Casablanca should generate:
+Casedra should generate:
 
 - response-time proofs
 - owner-facing progress updates
@@ -223,7 +223,7 @@ The strongest AI application companies in law, healthcare, and service win becau
 
 ### Product implication
 
-Casablanca should keep building the response, inbox, seller, and partner workflow stack rather than broad AI feature breadth.
+Casedra should keep building the response, inbox, seller, and partner workflow stack rather than broad AI feature breadth.
 
 ### GTM implication
 
@@ -264,7 +264,7 @@ In serious markets, customers reward systems they can trust more than systems th
 
 ### Product implication
 
-Casablanca should ship confidence rules, handoff packages, and visible AI ownership before expanding autonomy.
+Casedra should ship confidence rules, handoff packages, and visible AI ownership before expanding autonomy.
 
 ### GTM implication
 
@@ -288,7 +288,7 @@ Instrument every workflow event and turn top-performing patterns into reusable d
 
 ### GTM implication
 
-Casablanca should increasingly sell proof, benchmarks, and best-practice operating standards.
+Casedra should increasingly sell proof, benchmarks, and best-practice operating standards.
 
 ---
 
@@ -308,7 +308,7 @@ Build reporting and benchmark products that agencies expect to use every week.
 
 ### GTM implication
 
-Casablanca should aim to define what "good" agency operations look like in the market.
+Casedra should aim to define what "good" agency operations look like in the market.
 
 ---
 

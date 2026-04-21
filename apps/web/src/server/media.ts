@@ -3,11 +3,11 @@ import { config, run } from "@fal-ai/serverless-client";
 import type {
   MediaGenerationRequest,
   MediaGenerationResult,
-} from "@casablanca/types";
+} from "@casedra/types";
 
 import { env } from "@/env";
 import { getConvexClient } from "./convexClient";
-import { api } from "@casablanca/api/convex";
+import { api } from "@casedra/api/convex";
 
 config({
   credentials: () => env.FAL_KEY,

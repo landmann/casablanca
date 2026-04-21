@@ -1,7 +1,7 @@
 <!-- stripe-projects-cli managed:agents-md:start -->
 ## Stripe Projects CLI
 
-This repository is initialized for the Stripe project "casablanca".
+This repository is initialized for the Stripe project "casedra".
 
 ## Tools used
 

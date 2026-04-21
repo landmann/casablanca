@@ -5,7 +5,7 @@ description: Use the Stripe Projects CLI in this repository to manage deploying 
 
 # Stripe Projects CLI
 
-This repository is initialized for the Stripe project "casablanca".
+This repository is initialized for the Stripe project "casedra".
 
 # Workflow
 0. Run `stripe projects llm-context` to get the LLM context for the project.
@@ -65,4 +65,3 @@ Deploying a project might require to provision a provider that offers compute or
 - If a command fails, run `stripe projects status --json` to understand the current state.
 - If a provider shows status `PENDING_AUTH` or `EXPIRED`, run `stripe projects link <provider>` to re-authenticate. Add `--force` if you need a fresh re-link request regardless of local state.
 - If credentials seem stale, run `stripe projects rotate <resource>` then `stripe projects env --pull`.
-

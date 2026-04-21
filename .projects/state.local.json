@@ -5,7 +5,7 @@
     "merchantDisplayName": null,
     "merchantId": "acct_1TMuKgEzmcnVS1tv",
     "projectId": "project_61UWXz2oyPmk89rs916UWII2PVFIRKdrcCTDbnJA0XBI",
-    "projectName": "casablanca"
+    "projectName": "casedra"
   },
   "providers": {
     "clerk": {
@@ -30,7 +30,7 @@
   "resources": {
     "clerk-auth": {
       "configuration": {
-        "app_name": "casablanca"
+        "app_name": "casedra"
       },
       "createdAt": "2026-04-17T11:00:13.791Z",
       "lastRevealedAt": "2026-04-17T11:00:14.398Z",
@@ -65,7 +65,7 @@
     },
     "vercel-project": {
       "configuration": {
-        "name": "casablanca"
+        "name": "casedra"
       },
       "createdAt": "2026-04-17T11:00:42.981Z",
       "lastRevealedAt": "2026-04-17T11:00:43.603Z",

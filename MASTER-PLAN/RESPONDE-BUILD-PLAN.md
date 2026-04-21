@@ -10,7 +10,7 @@
 
 Responde is not a chatbot project.
 
-Responde is the first operational layer of Casablanca:
+Responde is the first operational layer of Casedra:
 
 - it receives live demand
 - it controls first response
@@ -18,7 +18,7 @@ Responde is the first operational layer of Casablanca:
 - it creates measurable response-time proof
 - it seeds the inbox that later becomes the workflow core
 
-If Responde works, Casablanca can expand.
+If Responde works, Casedra can expand.
 If Responde does not earn trust, the whole company shape gets weaker.
 
 ---
@@ -83,7 +83,7 @@ This is where teams:
 
 ### 3. Internal control and reporting layer
 
-This is where Casablanca:
+This is where Casedra:
 
 - tracks response time
 - identifies misses

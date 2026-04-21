@@ -1,4 +1,4 @@
-# Casablanca — Masterplan
+# Casedra — Masterplan
 
 **Date:** 2026-04-18  
 **Primary objective:** maximize the probability of a `EUR1B` valuation event by `2029-04-17`  
@@ -10,7 +10,7 @@
 
 European real-estate agency software is fragmented, shallow, and strategically captured by portals.
 
-Casablanca wins by becoming the **independent AI-native revenue OS** for agencies:
+Casedra wins by becoming the **independent AI-native revenue OS** for agencies:
 
 - first on response speed
 - then on live lead workflow
@@ -34,7 +34,7 @@ The company is trying to own the most valuable operational loop in an agency:
 4. the agency proves performance to the next seller
 5. partner services attach inside that workflow
 
-If Casablanca owns that loop across Spain, Portugal, and Italy, it becomes strategically valuable enough that a `EUR1B` outcome is plausible within 36 months.
+If Casedra owns that loop across Spain, Portugal, and Italy, it becomes strategically valuable enough that a `EUR1B` outcome is plausible within 36 months.
 
 ---
 
@@ -44,13 +44,13 @@ There are two possible `EUR1B` outcomes:
 
 ### Path A: Strategic outcome
 
-Casablanca becomes the most important independent workflow layer in idealista's core geographies and commands a strategic premium.
+Casedra becomes the most important independent workflow layer in idealista's core geographies and commands a strategic premium.
 
 This is the plan.
 
 ### Path B: Standalone venture-scale valuation
 
-Casablanca compounds into a multi-country revenue machine large enough to justify a `EUR1B` private mark on fundamentals alone.
+Casedra compounds into a multi-country revenue machine large enough to justify a `EUR1B` private mark on fundamentals alone.
 
 This is upside, not the base plan.
 
@@ -83,7 +83,7 @@ Five conditions make this moment unusually attractive:
    Agencies need proof, speed, and presentation quality to win instructions.
 
 5. **The independent angle is real**
-   The landlord of the ecosystem also sells to the customer. That creates a durable story for Casablanca if we earn the right to tell it.
+   The landlord of the ecosystem also sells to the customer. That creates a durable story for Casedra if we earn the right to tell it.
 
 AI adoption helps us. It also helps everyone else.
 So the real advantage is not "using AI."
@@ -129,7 +129,7 @@ Media does not remain important as:
 
 ## 5. The Expansion Ladder
 
-Casablanca expands in a strict order.
+Casedra expands in a strict order.
 
 ### Phase 0: Response control
 
@@ -184,36 +184,36 @@ The moat is the combination of:
 
 ### 1. Workflow lock-in
 
-Once an agency routes live conversations, owner follow-up, and performance reporting through Casablanca, leaving is not a simple software swap.
+Once an agency routes live conversations, owner follow-up, and performance reporting through Casedra, leaving is not a simple software swap.
 
 ### 2. Benchmark data
 
-Casablanca will see response times, source quality, lead-to-visit conversion, instruction win signals, and seller-capture performance across agencies and cities.
+Casedra will see response times, source quality, lead-to-visit conversion, instruction win signals, and seller-capture performance across agencies and cities.
 
 That network benchmark layer is more defensible than any single AI feature.
 
 ### 3. Cross-market relevance
 
-If Casablanca becomes useful in Spain, Portugal, and Italy under one operating model, it stops looking like a local tool and starts looking like strategic infrastructure.
+If Casedra becomes useful in Spain, Portugal, and Italy under one operating model, it stops looking like a local tool and starts looking like strategic infrastructure.
 
 ### 4. Partner routing power
 
-Once partner services enter through Casablanca, the company sits beside the money flow, not only beside the software workflow.
+Once partner services enter through Casedra, the company sits beside the money flow, not only beside the software workflow.
 
 ### 5. Trust architecture and evaluation discipline
 
-If Casablanca becomes known for clear handoffs, visible ownership, reliable escalation, and measured AI quality, it becomes harder to dismiss as "just another AI tool."
+If Casedra becomes known for clear handoffs, visible ownership, reliable escalation, and measured AI quality, it becomes harder to dismiss as "just another AI tool."
 
 ### 6. Playbook network and ritual brand
 
-If Casablanca captures how the best agencies respond, follow up, and win instructions, then turns that into weekly reports, proof pages, and manager rituals, it becomes more than software.
+If Casedra captures how the best agencies respond, follow up, and win instructions, then turns that into weekly reports, proof pages, and manager rituals, it becomes more than software.
 It becomes the standard agencies learn from.
 
 ---
 
 ## 8. Competitive Positioning
 
-Casablanca is positioned against four categories:
+Casedra is positioned against four categories:
 
 ### 1. Portal-owned software
 
@@ -270,7 +270,7 @@ Their weakness:
 
 The one line we should be able to say clearly is:
 
-**Casablanca is the independent AI-native revenue OS for agencies.**
+**Casedra is the independent AI-native revenue OS for agencies.**
 
 Not the prettiest tool.
 Not the cheapest tool.
@@ -290,7 +290,7 @@ Portugal is where we prove the model generalizes in an adjacent idealista market
 
 ### Italy
 
-Italy is where we prove Casablanca is not just a Spanish special case.
+Italy is where we prove Casedra is not just a Spanish special case.
 
 The company should not open more markets than that inside the first 36 months unless there is extraordinary pull.
 
@@ -328,14 +328,14 @@ Those definitions are not negotiable.
 
 ### By year 1
 
-- Casablanca clearly wins on response-time workflow, not just on demos
+- Casedra clearly wins on response-time workflow, not just on demos
 - seller-acquisition expansion is credible
 - onboarding is repeatable
 - pricing supports a real company, not a toy tool
 
 ### By year 2
 
-- Casablanca is a known operating layer in Spain
+- Casedra is a known operating layer in Spain
 - Portugal is live
 - the partner layer is starting to attach
 - the company can expand without founders doing every deployment themselves
@@ -343,7 +343,7 @@ Those definitions are not negotiable.
 ### By year 3
 
 - Spain, Portugal, and Italy are all real
-- Casablanca owns a meaningful benchmark data network
+- Casedra owns a meaningful benchmark data network
 - partner services add revenue and strategic depth
 - a `EUR1B` strategic conversation is credible
 

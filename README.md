@@ -1,6 +1,6 @@
-# Casablanca
+# Casedra
 
-Casablanca is an AI-native revenue workflow and seller-acquisition platform for real-estate agencies. This monorepo is powered by Turborepo, Next.js, Expo, Convex, Clerk, and Fal.ai.
+Casedra is an AI-native revenue workflow and seller-acquisition platform for real-estate agencies. This monorepo is powered by Turborepo, Next.js, Expo, Convex, Clerk, and Fal.ai.
 
 - Read **SETUP.md** for full environment and integration instructions.
 - Web studio lives in `apps/web`, mobile shell in `apps/mobile`.

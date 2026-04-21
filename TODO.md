@@ -8,7 +8,7 @@ Grouped by when it matters, not by priority.
 - [ ] **Connect repo to Vercel** so `git push` triggers preview + production deploys (Vercel dashboard → Project → Settings → Git)
 - [ ] **Convex production deployment** — dev deployment is non-durable. Run `npx convex deploy` and add `CONVEX_DEPLOY_KEY` to Vercel prod env
 - [ ] **Clerk production instance** — current instance is dev-mode (`inviting-emu-55`). Create prod instance, swap `CLERK_*` vars on Vercel for production target only
-- [ ] **Custom domain** — pick and attach (e.g. `casablanca.cloud`, `casablanca.studio`). Vercel dashboard → Project → Domains
+- [ ] **Custom domain** — pick and attach (e.g. `casedra.cloud`, `casedra.studio`). Vercel dashboard → Project → Domains
 - [ ] **Sign-in / sign-up pages** — `ClerkProvider` is mounted but no `/sign-in` or `/sign-up` routes. Needed before anyone can gate `/app/*`
 
 ## Feature-driven (wire when the feature ships)

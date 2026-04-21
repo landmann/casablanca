@@ -1,4 +1,4 @@
-# Casablanca — Execution Plan For Q2 To Q4 2026
+# Casedra — Execution Plan For Q2 To Q4 2026
 
 **Date:** 2026-04-18  
 **Window covered:** 2026-04-17 to 2026-12-31  
@@ -8,13 +8,13 @@
 
 ## 1. What 2026 Must Achieve
 
-By the end of 2026, Casablanca must no longer look like:
+By the end of 2026, Casedra must no longer look like:
 
 - a promising prototype
 - an AI media demo
 - a founder intuition project
 
-By the end of 2026, Casablanca must look like:
+By the end of 2026, Casedra must look like:
 
 - a live workflow product
 - a repeatable Madrid motion
@@ -67,7 +67,7 @@ The year-end objective is to enter January 2027 in position to hit:
 
 ### Primary objective
 
-Prove agencies will trust Casablanca with live demand and pay for it.
+Prove agencies will trust Casedra with live demand and pay for it.
 
 ### Commercial targets
 
@@ -280,7 +280,7 @@ Enter 2027 ready to hit `200` active paying agencies by `2027-01-31`.
 
 ### Q4 decision gate
 
-By `2026-12-31`, Casablanca must make one honest decision:
+By `2026-12-31`, Casedra must make one honest decision:
 
 - are we ready to scale into January and beyond on the current wedge
 - or do we still need to tighten the workflow before pushing harder
@@ -454,6 +454,6 @@ These items should be cut on sight if they threaten 2026 focus:
 
 At the end of each week, the team should be able to answer:
 
-**Did we make Casablanca more embedded in real agency workflow, or did we just stay busy?**
+**Did we make Casedra more embedded in real agency workflow, or did we just stay busy?**
 
 If the answer is the second one, the week was not good enough.

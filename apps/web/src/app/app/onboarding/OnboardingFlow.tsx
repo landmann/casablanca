@@ -21,7 +21,7 @@ import {
   CardTitle,
   Input,
   Textarea,
-} from "@casablanca/ui";
+} from "@casedra/ui";
 import type {
   AIGenerationRecord,
   BrandCreateInput,
@@ -29,7 +29,7 @@ import type {
   ListingCreateInput,
   ListingSourceType,
   MediaGenerationKind,
-} from "@casablanca/types";
+} from "@casedra/types";
 
 const stepOrder = ["brand", "listings", "review"] as const;
 export type OnboardingStepKey = (typeof stepOrder)[number];
@@ -107,7 +107,7 @@ const brandTips: Record<BrandSourceType, string> = {
   firecrawl:
     "We will pull palette, messaging, and voice from your public site using Firecrawl.",
   manual:
-    "Give us the essentials so Casablanca can mirror your brand across every deliverable.",
+    "Give us the essentials so Casedra can mirror your brand across every deliverable.",
 };
 
 function slugify(value: string) {
@@ -271,7 +271,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
             Set up your brand, listings, and media studio plan
           </h1>
           <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
-            We will tailor Casablanca to your brokerage. Share your brand, add live listings, and preview the AI media plan we will generate for every property.
+            We will tailor Casedra to your brokerage. Share your brand, add live listings, and preview the AI media plan we will generate for every property.
           </p>
         </header>
 
@@ -356,7 +356,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
                       </label>
                       <Input
                         id="brand-company-name"
-                        placeholder="Casablanca Realty"
+                        placeholder="Casedra Realty"
                         value={brand.companyName}
                         onChange={(event) =>
                           setBrand((prev) => ({ ...prev, companyName: event.target.value }))
@@ -401,7 +401,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
                       </label>
                       <Input
                         id="manual-company-name"
-                        placeholder="Casablanca Realty"
+                        placeholder="Casedra Realty"
                         value={brand.companyName}
                         onChange={(event) =>
                           setBrand((prev) => ({ ...prev, companyName: event.target.value }))
@@ -868,7 +868,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
                   <div className="flex flex-col gap-1">
                     <h3 className="text-lg font-semibold">AI media roadmap</h3>
                     <p className="text-sm text-muted-foreground">
-                      Casablanca will generate, track, and store assets using the schema we designed for the studio.
+                      Casedra will generate, track, and store assets using the schema we designed for the studio.
                     </p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -970,7 +970,7 @@ const stepDefinitions: Record<OnboardingStepKey, {
     label: "Brand",
     title: "Capture your brand identity",
     description:
-      "Give Casablanca your brand voice, palette, and tone so we can populate prompts, templates, and approvals.",
+      "Give Casedra your brand voice, palette, and tone so we can populate prompts, templates, and approvals.",
     icon: Building2,
   },
   listings: {

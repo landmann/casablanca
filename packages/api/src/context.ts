@@ -1,17 +1,17 @@
 import type {
 	MediaGenerationRequest,
 	MediaGenerationResult,
-} from "@casablanca/types";
+} from "@casedra/types";
 import type { ConvexHttpClient } from "convex/browser";
 
-export interface CasablancaSession {
+export interface CasedraSession {
 	userId: string;
 	sessionId: string | null;
 }
 
-export interface CasablancaContext {
+export interface CasedraContext {
 	convex: ConvexHttpClient;
-	session: CasablancaSession | null;
+	session: CasedraSession | null;
 	fal: {
 		generateMedia: (
 			request: MediaGenerationRequest,
@@ -19,6 +19,6 @@ export interface CasablancaContext {
 	};
 }
 
-export const createContext = (context: CasablancaContext) => context;
+export const createContext = (context: CasedraContext) => context;
 
 export type Context = Awaited<ReturnType<typeof createContext>>;

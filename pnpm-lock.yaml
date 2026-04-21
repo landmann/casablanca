@@ -40,13 +40,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@casablanca/api':
+      '@casedra/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@casablanca/types':
+      '@casedra/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@casablanca/ui':
+      '@casedra/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@clerk/nextjs':
@@ -164,7 +164,7 @@ importers:
 
   packages/api:
     dependencies:
-      '@casablanca/types':
+      '@casedra/types':
         specifier: workspace:*
         version: link:../types
       '@trpc/server':

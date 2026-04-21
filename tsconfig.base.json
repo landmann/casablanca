@@ -16,13 +16,13 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@casablanca/ui": ["packages/ui/src/index.ts"],
-      "@casablanca/ui/*": ["packages/ui/src/*"],
-      "@casablanca/api": ["packages/api/src/index.ts"],
-      "@casablanca/api/*": ["packages/api/src/*"],
-      "@casablanca/config/*": ["packages/config/*"],
-      "@casablanca/types": ["packages/types/src/index.ts"],
-      "@casablanca/types/*": ["packages/types/src/*"]
+      "@casedra/ui": ["packages/ui/src/index.ts"],
+      "@casedra/ui/*": ["packages/ui/src/*"],
+      "@casedra/api": ["packages/api/src/index.ts"],
+      "@casedra/api/*": ["packages/api/src/*"],
+      "@casedra/config/*": ["packages/config/*"],
+      "@casedra/types": ["packages/types/src/index.ts"],
+      "@casedra/types/*": ["packages/types/src/*"]
     }
   },
   "include": ["packages", "apps", "convex", "tooling"],

@@ -1,4 +1,4 @@
-# Casablanca — Financial Model And `EUR1B` Path
+# Casedra — Financial Model And `EUR1B` Path
 
 **Date:** 2026-04-18  
 **Purpose:** define the numbers that make the strategy honest
@@ -11,7 +11,7 @@ There are two different `EUR1B` outcomes:
 
 ### Strategic `EUR1B`
 
-This requires Casablanca to become strategically important enough to command a premium valuation by `2029-04-17`.
+This requires Casedra to become strategically important enough to command a premium valuation by `2029-04-17`.
 
 ### Standalone `EUR1B`
 
@@ -37,7 +37,7 @@ This model is optimized for the first path while preserving the second as upside
 - Portugal and Italy both matter before month 36
 - strategic relevance matters as much as raw ARR
 - trust, deployment quality, and benchmark products improve retention and strategic value
-- model providers remain replaceable enough that Casablanca keeps workflow ownership
+- model providers remain replaceable enough that Casedra keeps workflow ownership
 
 ---
 

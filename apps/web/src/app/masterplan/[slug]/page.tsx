@@ -19,7 +19,7 @@ export async function generateMetadata({
   const doc = getDoc(slug);
   if (!doc) return {};
   return {
-    title: `${doc.title} · Casablanca masterplan`,
+    title: `${doc.title} · Casedra masterplan`,
     robots: { index: false, follow: false },
   };
 }

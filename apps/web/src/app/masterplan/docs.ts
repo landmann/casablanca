@@ -26,7 +26,7 @@ export const DOCS: readonly MasterPlanDoc[] = [
     label: "AI doctrine",
     group: "Strategy",
     description:
-      "How Casablanca should build AI: embedded, trusted, evaluation-led, and hard to replace.",
+      "How Casedra should build AI: embedded, trusted, evaluation-led, and hard to replace.",
   },
   {
     slug: "overview",
@@ -62,7 +62,7 @@ export const DOCS: readonly MasterPlanDoc[] = [
     label: "Product",
     group: "Strategy",
     description:
-      "Phase order, product boundaries, and the workflow surfaces Casablanca should own first.",
+      "Phase order, product boundaries, and the workflow surfaces Casedra should own first.",
   },
   {
     slug: "gtm",
@@ -144,6 +144,15 @@ export const DOCS: readonly MasterPlanDoc[] = [
     group: "Repository",
     description:
       "The active implementation backlog and outstanding tasks tracked in the repository.",
+  },
+  {
+    slug: "casedra-launch-checklist",
+    path: "CASEDRA-LAUNCH-CHECKLIST.md",
+    title: "Casedra Launch Checklist",
+    label: "Launch",
+    group: "Repository",
+    description:
+      "Brand, domain, and provider setup checklist for keeping the project aligned to Casedra.",
   },
   {
     slug: "web-readme",

@@ -6,7 +6,7 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.hero}>
-        <Text style={styles.kicker}>Casablanca Mobile</Text>
+        <Text style={styles.kicker}>Casedra Mobile</Text>
         <Text style={styles.title}>Stay on top of listings anywhere.</Text>
         <Text style={styles.subtitle}>
           Review media runs, approve assets generated with fal.ai, and respond to

@@ -2,9 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: [
-    "@casablanca/ui",
-    "@casablanca/api",
-    "@casablanca/types",
+    "@casedra/ui",
+    "@casedra/api",
+    "@casedra/types",
   ],
 };
 

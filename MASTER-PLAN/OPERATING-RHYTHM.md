@@ -1,4 +1,4 @@
-# Casablanca — Operating Rhythm
+# Casedra — Operating Rhythm
 
 **Date:** 2026-04-18  
 **Purpose:** turn the strategy into a repeatable company operating system
@@ -7,7 +7,7 @@
 
 ## 1. The Company Clock
 
-Casablanca runs on four nested clocks:
+Casedra runs on four nested clocks:
 
 1. **36-month clock**
    The `EUR1B` strategic-outcome plan.
@@ -67,7 +67,7 @@ A design partner:
 - allows live deployment
 - shares workflow pain honestly
 - joins weekly reviews
-- allows Casablanca to measure outcomes
+- allows Casedra to measure outcomes
 
 ### Live account
 
@@ -101,7 +101,7 @@ An at-risk account has one or more of:
 
 ## 4. Ownership Model
 
-Casablanca should run with explicit functional ownership, not collective ambiguity.
+Casedra should run with explicit functional ownership, not collective ambiguity.
 
 ### Founder 1 — Revenue
 
@@ -443,7 +443,7 @@ Brand marketing and organizational layers come later.
 
 ## 12. Artifact Stack
 
-Casablanca should maintain these operating artifacts:
+Casedra should maintain these operating artifacts:
 
 ### Mandatory weekly artifacts
 
@@ -474,7 +474,7 @@ The operating system is only as good as the artifacts it produces.
 
 ## 13. The One Rule To Remember
 
-Casablanca should feel like one revenue team with three functions:
+Casedra should feel like one revenue team with three functions:
 
 - field
 - product

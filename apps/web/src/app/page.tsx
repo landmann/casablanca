@@ -9,45 +9,48 @@ import {
   Workflow,
 } from "lucide-react";
 
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@casablanca/ui";
-
-const calendarHref = "https://cal.com/product@casablanca.cloud/demo";
-const demoRoute = "/book-demo";
-const emailHref = "mailto:product@casablanca.cloud?subject=Demo%20Casablanca";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@casedra/ui";
+import {
+  calendarHref,
+  demoRoute,
+  founderContacts,
+  founderSectionId,
+  generalEmail,
+} from "./marketing-data";
 
 export const metadata: Metadata = {
-  title: "Casablanca",
+  title: "Casedra",
   description:
-    "Casablanca ayuda a agencias inmobiliarias a responder antes, ordenar WhatsApp y portales, y dar visibilidad real a dirección.",
+    "Casedra ayuda a agencias inmobiliarias a responder leads antes, repartirlos mejor y dar a dirección control real sobre WhatsApp, portales y seguimiento.",
 };
 
 const heroHighlights = [
-  "Primera respuesta rápida",
-  "Traspaso claro al agente",
-  "Informe semanal para dirección",
+  "WhatsApp, portales y web",
+  "Primera respuesta y reparto",
+  "Cobertura semanal visible",
 ] as const;
 
 const previewHighlights = [
-  { label: "Canales", value: "WhatsApp + portales" },
-  { label: "Operativa", value: "Respuesta + reparto" },
-  { label: "Dirección", value: "Informe semanal" },
+  { label: "Entrada", value: "Todos los canales en un flujo" },
+  { label: "Acción", value: "Respuesta inicial + reparto" },
+  { label: "Dirección", value: "Cobertura + pendientes" },
 ] as const;
 
 const buyerOutcomes = [
   {
-    label: "Respuesta",
-    value: "Menos leads sin contestar",
-    detail: "La primera respuesta sale antes y la conversación no se enfría en la bandeja.",
+    label: "Velocidad",
+    value: "El lead no se enfría",
+    detail: "La primera respuesta sale antes y la oficina deja de perder conversaciones en la primera hora.",
   },
   {
     label: "Equipo",
-    value: "Menos caos en WhatsApp",
-    detail: "Queda claro cuándo responde Casablanca y cuándo entra una persona del equipo.",
+    value: "Cada agente entra con contexto",
+    detail: "Casedra recoge lo básico y entrega el hilo con intención, origen y siguiente paso.",
   },
   {
     label: "Dirección",
-    value: "Más control de oficina",
-    detail: "Cada semana se revisa qué se respondió, qué quedó pendiente y qué toca ajustar.",
+    value: "La oficina deja de operar a ciegas",
+    detail: "Cobertura, pendientes y escalados quedan visibles sin pedir capturas ni perseguir al equipo.",
   },
 ] as const;
 
@@ -56,70 +59,70 @@ const platformPillars = [
     icon: MessageSquareText,
     title: "Primera respuesta",
     summary:
-      "Casablanca atiende el primer contacto, recoge intención y deja la conversación encarrilada desde el minuto uno.",
-    details: ["WhatsApp", "Portales", "Formulario web"],
+      "Casedra responde el primer mensaje, confirma intención y deja el lead listo para seguir.",
+    details: ["WhatsApp", "Portales", "Web"],
   },
   {
     icon: Workflow,
-    title: "Reparto y traspaso",
+    title: "Reparto al agente",
     summary:
-      "Cada lead llega al agente correcto con contexto, resumen y un siguiente paso claro.",
-    details: ["Asignación", "Resumen para agente", "Escalado claro"],
+      "Cada conversación pasa al agente correcto con resumen, contexto y siguiente paso claro.",
+    details: ["Asignación", "Resumen", "Traspaso visible"],
   },
   {
     icon: Radar,
-    title: "Visibilidad para dirección",
+    title: "Vista para dirección",
     summary:
-      "Dirección ve cobertura, pendientes, hilos escalados y fricciones sin perseguir capturas por WhatsApp.",
-    details: ["Cobertura", "Pendientes", "Informe semanal"],
+      "Dirección ve qué se respondió, qué quedó pendiente y dónde hay fricción cada semana.",
+    details: ["Cobertura", "Pendientes", "Seguimiento semanal"],
   },
 ] as const;
 
 const trustArchitecture = [
   {
     icon: ShieldCheck,
-    title: "Siempre se sabe quién responde",
+    title: "IA visible, no oculta",
     body:
-      "Casablanca no oculta la operativa. Queda claro cuándo actúa la IA y cuándo toma el hilo una persona.",
+      "Siempre queda claro cuándo responde Casedra y cuándo entra una persona del equipo.",
   },
   {
     icon: MessageSquareText,
-    title: "Empieza con vuestros canales actuales",
+    title: "Se monta sobre lo que ya usáis",
     body:
-      "WhatsApp, reenvíos de portales y formularios web entran en la misma operativa sin cambiar todo de golpe.",
+      "WhatsApp, portales y formularios web entran en la misma operativa sin cambiar toda la oficina de golpe.",
   },
   {
     icon: Building2,
-    title: "Se implanta por oficina",
+    title: "Empieza en una oficina",
     body:
-      "La demo y el despliegue se plantean sobre un equipo real, con un alcance claro y sin vender humo.",
+      "El despliegue se define sobre un equipo real, con alcance claro y sin vender una transformación abstracta.",
   },
 ] as const;
 
 const operatingLoop = [
   {
     step: "01",
-    title: "Llega el lead",
+    title: "Entra el lead",
     description:
-      "Idealista, web y WhatsApp aterrizan en el mismo sitio en lugar de perderse entre reenvíos y chats.",
+      "Idealista, web y WhatsApp entran en el mismo flujo en lugar de perderse entre reenvíos y chats.",
   },
   {
     step: "02",
     title: "Sale la primera respuesta",
     description:
-      "Casablanca abre el hilo, recoge lo básico y evita que el lead se quede esperando.",
+      "Casedra abre el hilo, recoge lo básico y evita que el lead se quede esperando sin contexto.",
   },
   {
     step: "03",
-    title: "Se pasa al agente correcto",
+    title: "Pasa al agente correcto",
     description:
-      "El equipo recibe contexto, intención y siguiente paso sin tener que reconstruir la conversación.",
+      "El equipo recibe contexto, intención y siguiente paso sin reconstruir la conversación desde cero.",
   },
   {
     step: "04",
     title: "Dirección revisa la semana",
     description:
-      "Cada semana queda claro qué se respondió, qué se perdió y qué necesita ajuste.",
+      "Cada semana queda claro qué se respondió, qué quedó pendiente y qué toca ajustar.",
   },
 ] as const;
 
@@ -140,7 +143,7 @@ export default function HomePage() {
               C
             </span>
             <span className="truncate text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground sm:text-sm sm:tracking-[0.26em]">
-              Casablanca
+              Casedra
             </span>
           </Link>
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground lg:flex">
@@ -164,29 +167,29 @@ export default function HomePage() {
             <div className="max-w-3xl">
               <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/80 bg-background/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-sm backdrop-blur sm:px-4 sm:text-[11px] sm:tracking-[0.28em]">
                 <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                Para agencias inmobiliarias que trabajan con WhatsApp y portales
+                Para agencias inmobiliarias que trabajan leads en WhatsApp, portales y web
               </div>
               <h1 className="mt-6 max-w-4xl text-balance font-serif text-[3rem] font-normal leading-[0.98] text-foreground sm:text-[4.25rem] xl:text-[5.2rem]">
-                Primera respuesta rápida.
+                Casedra responde el primer contacto.
                 <br />
-                Reparto claro al agente.
+                Pasa el lead al agente correcto.
                 <br />
-                Control real para dirección.
+                Da visibilidad real a dirección.
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                Casablanca ayuda a tu agencia a responder antes, ordenar la entrada de leads desde
-                WhatsApp y portales, y dar a dirección visibilidad semanal sin añadir otro CRM
-                pesado ni promesas vacías de automatización.
+                Centraliza leads de WhatsApp, portales y web, lanza la primera respuesta y deja
+                cada conversación lista para seguir. Dirección ve cobertura, pendientes y
+                seguimiento semanal desde el mismo sitio.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap">
                 <Button asChild size="lg" className="rounded-full px-7 sm:w-auto">
                   <Link href={calendarHref} className="inline-flex items-center gap-2">
-                    Ver huecos disponibles
+                    Reservar demo de 20 min
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="rounded-full px-7 sm:w-auto">
-                  <Link href={demoRoute}>Qué verás en la demo</Link>
+                  <Link href={demoRoute}>Cómo sería en tu oficina</Link>
                 </Button>
                 <Button
                   asChild
@@ -194,7 +197,7 @@ export default function HomePage() {
                   size="lg"
                   className="rounded-full px-6 sm:w-auto sm:justify-start"
                 >
-                  <Link href={emailHref}>Escribirnos</Link>
+                  <Link href={`#${founderSectionId}`}>Hablar con un fundador</Link>
                 </Button>
               </div>
               <div className="mt-8 flex flex-wrap gap-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:gap-3 sm:text-xs sm:tracking-[0.2em]">
@@ -219,7 +222,7 @@ export default function HomePage() {
                         Vista del producto
                       </p>
                       <CardTitle className="mt-2 font-serif text-[1.9rem] font-normal leading-tight sm:text-3xl">
-                        Cómo trabaja una oficina con Casablanca
+                        Cómo trabaja una oficina con Casedra
                       </CardTitle>
                     </div>
                     <div className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-primary">
@@ -239,7 +242,7 @@ export default function HomePage() {
                     </div>
                     <div className="mt-4 rounded-[22px] border border-border/80 bg-background/80 p-5">
                       <p className="font-serif text-[1.75rem] font-normal leading-tight text-foreground">
-                        Así se verá el flujo completo de Casablanca.
+                        Así se verá el flujo completo de Casedra.
                       </p>
                       <p className="mt-3 text-sm leading-6 text-muted-foreground">
                         Muy pronto añadiremos un vídeo corto del producto. Mientras tanto, este es
@@ -288,11 +291,11 @@ export default function HomePage() {
                       <div className="mt-5 space-y-4">
                         <div className="rounded-2xl border border-border/80 bg-background p-4 shadow-sm">
                           <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="text-sm font-semibold text-foreground">Lead entrante</p>
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                Consulta por Idealista. Quiere visitar un piso esta semana y resolver
-                                disponibilidad.
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">Lead entrante</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Consulta por portal. Quiere visitar una vivienda esta semana y
+                                resolver disponibilidad.
                               </p>
                             </div>
                             <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -305,7 +308,7 @@ export default function HomePage() {
                             Primera respuesta
                           </p>
                           <p className="mt-2 text-sm leading-6 text-foreground/90">
-                            Casablanca confirma intención, zona y disponibilidad antes de pasar la
+                            Casedra confirma intención y disponibilidad básica antes de pasar la
                             conversación al equipo.
                           </p>
                         </div>
@@ -317,7 +320,7 @@ export default function HomePage() {
                             </span>
                           </div>
                           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            El agente recibe contexto, intención y siguiente paso sin reconstruir el
+                            El agente recibe origen, contexto y siguiente paso sin reconstruir el
                             hilo desde cero.
                           </p>
                         </div>
@@ -353,7 +356,7 @@ export default function HomePage() {
                           La IA ayuda a operar. El equipo sigue mandando.
                         </p>
                         <p className="mt-3 text-sm leading-6 text-foreground/85">
-                          Casablanca está pensada para que el control siga siendo visible en todo
+                          Casedra está pensada para que el control siga siendo visible en todo
                           momento, especialmente cuando toca entrar a un agente.
                         </p>
                       </div>
@@ -385,14 +388,14 @@ export default function HomePage() {
           <section id="how-it-works" className="mt-24">
             <div className="max-w-3xl">
               <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                Qué hace Casablanca
+                Qué hace Casedra
               </p>
               <h2 className="mt-4 font-serif text-4xl font-normal leading-tight text-foreground sm:text-5xl">
-                Menos tiempo perdido entre mensajes. Más operativa clara para la oficina.
+                Una sola operativa para responder, repartir y seguir cada lead.
               </h2>
               <p className="mt-4 text-base leading-8 text-muted-foreground sm:text-lg">
-                La propuesta es simple: responder antes, repartir mejor y dar a dirección una vista
-                real de lo que está pasando sin depender de reenvíos manuales ni memoria de equipo.
+                La propuesta es simple: menos reenvíos manuales, menos hilos perdidos y una vista
+                real de lo que pasa en la oficina sin depender de memoria de equipo.
               </p>
             </div>
 
@@ -443,11 +446,11 @@ export default function HomePage() {
                 Implantación y control
               </p>
               <h3 className="mt-4 font-serif text-4xl font-normal leading-tight text-foreground">
-                Esto tiene que ayudar a trabajar mejor, no complicar más la oficina.
+                Se implanta sobre la operativa real de la oficina, no sobre un PowerPoint.
               </h3>
               <p className="mt-4 text-base leading-8 text-muted-foreground">
-                La venta no debería depender de promesas abstractas. Debería quedar claro cómo entra
-                el lead, quién responde, cuándo se escala y qué ve dirección cada semana.
+                En la demo debería quedar claro cómo entra el lead, quién responde, cuándo se escala
+                y qué ve dirección cada semana. Si eso no se entiende, no sirve.
               </p>
               <div className="mt-8 space-y-4">
                 {trustArchitecture.map((item) => {
@@ -498,26 +501,88 @@ export default function HomePage() {
             </div>
           </section>
 
+          <section
+            id={founderSectionId}
+            className="mt-24 grid gap-8 xl:grid-cols-[0.88fr_1.12fr] xl:items-start"
+          >
+            <div className="max-w-xl">
+              <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
+                Contacto directo
+              </p>
+              <h3 className="mt-4 font-serif text-4xl font-normal leading-tight text-foreground">
+                Si prefieres hablar con una persona, habla con uno de los fundadores.
+              </h3>
+              <p className="mt-4 text-base leading-8 text-muted-foreground">
+                Estamos abriendo las primeras oficinas y preferimos conversaciones directas. Si nos
+                escribes con vuestro flujo actual, te responderemos con si encaja, cómo empezar y
+                qué miraríamos primero.
+              </p>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Si prefieres ir a lo sencillo, también puedes escribir a{" "}
+                <Link href={`mailto:${generalEmail}`} className="underline underline-offset-4">
+                  {generalEmail}
+                </Link>
+                .
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {founderContacts.map((contact) => (
+                <Card
+                  key={contact.email}
+                  className="rounded-[28px] border-border/80 bg-background/92 shadow-[0_24px_70px_rgba(31,26,20,0.07)]"
+                >
+                  <CardHeader className="space-y-4">
+                    <div className="inline-flex w-fit rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-primary">
+                      Fundador
+                    </div>
+                    <div>
+                      <CardTitle className="font-serif text-[2rem] font-normal leading-tight">
+                        {contact.name}
+                      </CardTitle>
+                      <p className="mt-2 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                        {contact.role}
+                      </p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <p className="text-sm leading-6 text-muted-foreground">{contact.summary}</p>
+                    <div className="rounded-2xl border border-border/80 bg-secondary/45 px-4 py-4">
+                      <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                        Email directo
+                      </p>
+                      <p className="mt-2 text-base font-semibold text-foreground">{contact.email}</p>
+                    </div>
+                    <Button asChild variant="outline" className="rounded-full px-6">
+                      <Link href={contact.href} className="inline-flex items-center gap-2">
+                        Escribir a {contact.firstName}
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+
           <section className="mt-24 rounded-[30px] border border-primary/25 bg-primary/10 p-6 sm:p-8">
-            <p className="text-xs font-medium uppercase tracking-[0.28em] text-primary">
-              Demo de 20 min
-            </p>
+            <p className="text-xs font-medium uppercase tracking-[0.28em] text-primary">Demo de 20 min</p>
             <h3 className="mt-4 max-w-4xl font-serif text-4xl font-normal leading-tight text-foreground">
-              Si quieres ver si encaja con tu oficina, te lo enseñamos sobre vuestro flujo real.
+              En 20 minutos te diremos si Casedra encaja o no en tu oficina.
             </h3>
             <p className="mt-4 max-w-3xl text-base leading-8 text-foreground/85">
-              Vemos de dónde entran vuestros leads, cómo se reparten hoy y dónde tendría sentido
-              empezar. Sin pitch genérico. Sin compromiso. Si no encaja, te lo diremos.
+              Vemos de dónde entran vuestros leads, quién responde hoy y dónde tendría sentido
+              empezar. Sin pitch genérico. Si no encaja, te lo diremos.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button asChild size="lg" className="rounded-full px-7">
                 <Link href={calendarHref} className="inline-flex items-center gap-2">
-                  Ver huecos disponibles
+                  Reservar demo
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-full px-7">
-                <Link href={emailHref}>Escribir a product@casablanca.cloud</Link>
+                <Link href={`#${founderSectionId}`}>Hablar con un fundador</Link>
               </Button>
             </div>
             <div className="mt-6 flex flex-wrap gap-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-primary/80 sm:text-xs sm:tracking-[0.2em]">

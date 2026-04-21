@@ -1,4 +1,4 @@
-# Casablanca — Product Roadmap
+# Casedra — Product Roadmap
 
 **Date:** 2026-04-18  
 **Purpose:** define what we build, in what order, and what we explicitly do not build
@@ -133,7 +133,7 @@ An account counts only if:
 ## 4. Phase 1 — Inbox And Routing Control
 
 **Window:** 2026-06-01 to 2026-10-31  
-**Goal:** make Casablanca the place where agencies work live demand
+**Goal:** make Casedra the place where agencies work live demand
 
 ### Must ship
 
@@ -176,7 +176,7 @@ An account counts only if:
 
 ### Why this phase matters
 
-If we win this phase, Casablanca stops being a helpful tool and starts becoming a workflow dependency.
+If we win this phase, Casedra stops being a helpful tool and starts becoming a workflow dependency.
 
 ### Explicitly out of scope
 
@@ -190,7 +190,7 @@ If we win this phase, Casablanca stops being a helpful tool and starts becoming 
 - G1 and G2 hit
 - 75%+ of paying agencies weekly active in inbox
 - response-time reporting referenced in sales conversations
-- managers rely on Casablanca for team visibility
+- managers rely on Casedra for team visibility
 
 ---
 
@@ -236,7 +236,7 @@ If we win this phase, Casablanca stops being a helpful tool and starts becoming 
 ### Why this phase comes before broad CRM depth
 
 Seller acquisition raises ACV and strategic value faster than a broad CRM build.
-It also makes Casablanca matter at the exact moment agencies compete for the next listing.
+It also makes Casedra matter at the exact moment agencies compete for the next listing.
 
 ### Explicitly out of scope
 
@@ -249,7 +249,7 @@ It also makes Casablanca matter at the exact moment agencies compete for the nex
 
 - G3 and G4 hit
 - seller-acquisition module attached in at least 30% of active accounts
-- clear evidence that Casablanca helps agencies win or accelerate instructions
+- clear evidence that Casedra helps agencies win or accelerate instructions
 
 ---
 
@@ -326,7 +326,7 @@ It also makes Casablanca matter at the exact moment agencies compete for the nex
    - seller-capture benchmarks
 
 4. **Selective marketplace expansion**
-   - only in categories where Casablanca already has workflow leverage
+   - only in categories where Casedra already has workflow leverage
 
 ### Exit criteria
 
@@ -384,7 +384,7 @@ Own the data products and workflow intelligence layer that matter more than raw 
 Expand autonomy only in bounded workflows with clear approvals and measurable quality.
 
 The moat is not a proprietary base model.
-The moat is what Casablanca sees, measures, and routes.
+The moat is what Casedra sees, measures, and routes.
 Model optionality is strategic.
 
 ---

@@ -1,5 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import { cn } from "@casablanca/ui";
+import { cn } from "@casedra/ui";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
@@ -24,9 +24,9 @@ const fontSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-	title: "Casablanca",
+	title: "Casedra",
 	description:
-		"Casablanca is the independent revenue OS for real-estate agencies: response control, live workflow, and seller-side proof.",
+		"Casedra is the independent revenue OS for real-estate agencies: response control, live workflow, and seller-side proof.",
 	icons: {
 		icon: "/favicon.svg",
 		shortcut: "/favicon.svg",
