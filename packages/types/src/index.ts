@@ -17,6 +17,8 @@ export interface ListingLocationResolution {
 	status: LocationResolutionStatus;
 	confidenceScore: number;
 	officialSource: string;
+	officialSourceUrl?: string;
+	territoryAdapter?: LocalizaTerritoryAdapter;
 	requestedStrategy?: LocalizaAcquisitionStrategy;
 	actualAcquisitionMethod?: IdealistaAcquisitionMethod;
 	parcelRef14?: string;
@@ -38,6 +40,13 @@ export type LocalizaAcquisitionStrategy =
 	| "idealista_api"
 	| "firecrawl"
 	| "browser_worker";
+
+export type LocalizaTerritoryAdapter =
+	| "state_catastro"
+	| "navarra_rtn"
+	| "alava_catastro"
+	| "bizkaia_catastro"
+	| "gipuzkoa_catastro";
 
 export type LocalizaErrorCode =
 	| "feature_disabled"
@@ -84,6 +93,8 @@ export interface ResolutionEvidence {
 	requestedStrategy: LocalizaAcquisitionStrategy;
 	actualAcquisitionMethod?: IdealistaAcquisitionMethod;
 	officialSource: string;
+	officialSourceUrl?: string;
+	territoryAdapter?: LocalizaTerritoryAdapter;
 }
 
 export interface ResolveIdealistaLocationCandidate {
@@ -91,6 +102,7 @@ export interface ResolveIdealistaLocationCandidate {
 	label: string;
 	parcelRef14?: string;
 	unitRef20?: string;
+	officialUrl?: string;
 	distanceMeters?: number;
 	score: number;
 	reasonCodes: string[];
@@ -102,6 +114,8 @@ export interface ResolveIdealistaLocationResult {
 	requestedStrategy: LocalizaAcquisitionStrategy;
 	confidenceScore: number;
 	officialSource: string;
+	officialSourceUrl?: string;
+	territoryAdapter?: LocalizaTerritoryAdapter;
 	resolverVersion: string;
 	resolvedAt: string;
 	resolvedAddressLabel?: string;

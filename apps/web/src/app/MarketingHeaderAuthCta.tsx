@@ -10,7 +10,7 @@ export function MarketingHeaderAuthCta({ calendarHref }: { calendarHref: string 
 		<div className="flex items-center gap-3">
 			<Show when="signed-in">
 				<Button asChild variant="ghost" className="rounded-full px-4 text-foreground">
-					<Link href="/app/studio">Abrir estudio</Link>
+					<Link href="/app">Abrir inbox</Link>
 				</Button>
 			</Show>
 			<Show when="signed-out">

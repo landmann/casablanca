@@ -9,6 +9,7 @@ import type {
 	ListingLocationResolution,
 	ListingSourceType,
 	LocalizaAcquisitionStrategy,
+	LocalizaTerritoryAdapter,
 	MediaGenerationKind,
 	ResolveIdealistaLocationResult,
 } from "@casedra/types";
@@ -33,9 +34,9 @@ import {
 	LoaderCircle,
 	Sparkles,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import posthog from "posthog-js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "@/env";
 import { trpc } from "@/trpc/shared";
 
@@ -258,6 +259,25 @@ const localizaMethodLabel: Record<IdealistaAcquisitionMethod, string> = {
 	browser_worker: "Browser worker",
 };
 
+const localizaTerritoryLabel: Record<LocalizaTerritoryAdapter, string> = {
+	state_catastro: "National Catastro",
+	navarra_rtn: "Navarra",
+	alava_catastro: "Álava",
+	bizkaia_catastro: "Bizkaia",
+	gipuzkoa_catastro: "Gipuzkoa",
+};
+
+const capturePosthogEvent = (
+	event: string,
+	properties: Record<string, unknown>,
+) => {
+	if (!env.NEXT_PUBLIC_POSTHOG_KEY) {
+		return;
+	}
+
+	posthog.capture(event, properties);
+};
+
 function slugify(value: string) {
 	return value
 		.toLowerCase()
@@ -306,6 +326,8 @@ const buildLocationResolutionFromResult = (
 	status: overrides?.status ?? result.status,
 	confidenceScore: overrides?.confidenceScore ?? result.confidenceScore,
 	officialSource: result.officialSource,
+	officialSourceUrl: result.officialSourceUrl,
+	territoryAdapter: result.territoryAdapter,
 	requestedStrategy: result.requestedStrategy,
 	actualAcquisitionMethod: result.evidence.actualAcquisitionMethod,
 	parcelRef14: overrides?.parcelRef14 ?? result.parcelRef14,
@@ -345,7 +367,6 @@ interface OnboardingFlowProps {
 
 export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	const router = useRouter();
-	const localizaEnabled = env.NEXT_PUBLIC_LOCALIZA_ENABLED;
 	const normalizedStep = stepOrder.includes(initialStep)
 		? initialStep
 		: "brand";
@@ -368,6 +389,22 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	const [submissionIdempotencyKey, setSubmissionIdempotencyKey] = useState<
 		string | null
 	>(null);
+	const hasTrackedLocalizaUrlPasteRef = useRef(false);
+	const hasTrackedManualOverrideRef = useRef(false);
+
+	const buildLocalizaAnalyticsPayload = (
+		result: ResolveIdealistaLocationResult,
+	) => ({
+		status: result.status,
+		requestedStrategy: result.requestedStrategy,
+		actualAcquisitionMethod: result.evidence.actualAcquisitionMethod,
+		officialSource: result.officialSource,
+		officialSourceUrl: result.officialSourceUrl,
+		territoryAdapter: result.territoryAdapter,
+		externalListingId: result.sourceMetadata.externalListingId,
+		candidateCount: result.candidates.length,
+		confidenceScore: result.confidenceScore,
+	});
 
 	useEffect(() => {
 		setCurrentStep(normalizedStep);
@@ -407,6 +444,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	const resolveIdealistaLocation =
 		trpc.listings.resolveIdealistaLocation.useMutation({
 			onSuccess: (result) => {
+				hasTrackedManualOverrideRef.current = false;
 				setLocalizaError(null);
 				setLocalizaResult(result);
 				setSelectedLocalizaCandidateId(null);
@@ -422,8 +460,20 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 							? buildLocationResolutionFromResult(result)
 							: undefined,
 				}));
+				capturePosthogEvent("localiza_resolve_result", {
+					...buildLocalizaAnalyticsPayload(result),
+					outcome:
+						result.status === "unresolved" ? "unresolved" : "resolved",
+				});
+				capturePosthogEvent(
+					result.status === "unresolved"
+						? "localiza_resolve_unresolved"
+						: "localiza_resolve_success",
+					buildLocalizaAnalyticsPayload(result),
+				);
 			},
 			onError: (error) => {
+				hasTrackedManualOverrideRef.current = false;
 				setLocalizaResult(null);
 				setLocalizaError(error.message);
 				setSelectedLocalizaCandidateId(null);
@@ -432,6 +482,12 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 					sourceMetadata: undefined,
 					locationResolution: undefined,
 				}));
+				capturePosthogEvent("localiza_resolve_failed", {
+					requestedStrategy: localizaStrategy,
+					sourceType: listingDraft.sourceType,
+					sourceUrlPresent: Boolean(listingDraft.sourceUrl.trim()),
+					errorMessage: error.message,
+				});
 			},
 		});
 
@@ -488,9 +544,21 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 		}
 
 		return listingDraft.sourceUrl.trim().length > 0;
-	}, [listingDraft.sourceType, listingDraft.sourceUrl, listingDraft.title]);
+	}, [
+		listingDraft.details.description,
+		listingDraft.location.city,
+		listingDraft.location.country,
+		listingDraft.location.postalCode,
+		listingDraft.location.stateOrProvince,
+		listingDraft.location.street,
+		listingDraft.sourceType,
+		listingDraft.sourceUrl,
+		listingDraft.title,
+	]);
 
 	const clearLocalizaDraftState = () => {
+		hasTrackedLocalizaUrlPasteRef.current = false;
+		hasTrackedManualOverrideRef.current = false;
 		setLocalizaStrategy("auto");
 		setLocalizaResult(null);
 		setLocalizaError(null);
@@ -503,6 +571,8 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	};
 
 	const handleListingSourceTypeChange = (sourceType: ListingSourceType) => {
+		hasTrackedLocalizaUrlPasteRef.current = false;
+		hasTrackedManualOverrideRef.current = false;
 		if (sourceType !== "idealista") {
 			clearLocalizaDraftState();
 		} else {
@@ -523,6 +593,22 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	};
 
 	const handleListingSourceUrlChange = (value: string) => {
+		const trimmedValue = value.trim();
+
+		if (listingDraft.sourceType === "idealista") {
+			if (trimmedValue && !hasTrackedLocalizaUrlPasteRef.current) {
+				hasTrackedLocalizaUrlPasteRef.current = true;
+				capturePosthogEvent("localiza_url_pasted", {
+					requestedStrategy: localizaStrategy,
+					sourceType: listingDraft.sourceType,
+				});
+			}
+
+			if (!trimmedValue) {
+				hasTrackedLocalizaUrlPasteRef.current = false;
+			}
+		}
+
 		setLocalizaResult(null);
 		setLocalizaError(null);
 		setSelectedLocalizaCandidateId(null);
@@ -537,6 +623,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	const handleLocalizaStrategyChange = (
 		strategy: LocalizaAcquisitionStrategy,
 	) => {
+		hasTrackedManualOverrideRef.current = false;
 		setLocalizaStrategy(strategy);
 		setLocalizaResult(null);
 		setLocalizaError(null);
@@ -563,6 +650,17 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 				prev.locationResolution?.status !== "unresolved" &&
 				hasMaterialLocationChange(prev.location, nextLocation);
 
+			if (shouldMarkManualOverride && !hasTrackedManualOverrideRef.current) {
+				hasTrackedManualOverrideRef.current = true;
+				capturePosthogEvent("localiza_manual_override", {
+					sourceType: prev.sourceType,
+					locationResolutionStatus: prev.locationResolution?.status,
+					requestedStrategy: prev.locationResolution?.requestedStrategy,
+					officialSource: prev.locationResolution?.officialSource,
+					territoryAdapter: prev.locationResolution?.territoryAdapter,
+				});
+			}
+
 			return {
 				...prev,
 				location: nextLocation,
@@ -583,7 +681,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	};
 
 	const handleResolveIdealistaLocation = async () => {
-		if (!localizaEnabled || listingDraft.sourceType !== "idealista") {
+		if (listingDraft.sourceType !== "idealista") {
 			return;
 		}
 
@@ -595,6 +693,11 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 		}
 
 		setLocalizaError(null);
+		capturePosthogEvent("localiza_resolve_clicked", {
+			requestedStrategy: localizaStrategy,
+			sourceType: listingDraft.sourceType,
+			sourceUrlPresent: true,
+		});
 		await resolveIdealistaLocation.mutateAsync({
 			url,
 			strategy: localizaStrategy,
@@ -619,6 +722,11 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 				extraReasonCodes: ["building_match_accepted"],
 			}),
 		}));
+		hasTrackedManualOverrideRef.current = false;
+		capturePosthogEvent("localiza_building_match_accepted", {
+			...buildLocalizaAnalyticsPayload(localizaResult),
+			resolvedAddressLabel: localizaResult.resolvedAddressLabel,
+		});
 		setLocalizaResult((prev) =>
 			prev
 				? {
@@ -650,6 +758,17 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 			return;
 		}
 
+		hasTrackedManualOverrideRef.current = false;
+		capturePosthogEvent("localiza_candidate_confirmed", {
+			...buildLocalizaAnalyticsPayload(localizaResult),
+			selectedCandidateId: selectedCandidate.id,
+			selectedCandidateLabel: selectedCandidate.label,
+			selectedCandidateScore: selectedCandidate.score,
+			selectedCandidateParcelRef14: selectedCandidate.parcelRef14,
+			selectedCandidateHasPrefillLocation: Boolean(
+				selectedCandidate.prefillLocation,
+			),
+		});
 		setListingDraft((prev) => ({
 			...prev,
 			sourceMetadata: localizaResult.sourceMetadata,
@@ -687,6 +806,32 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 		);
 	};
 
+	const handleSelectLocalizaCandidate = (candidateId: string) => {
+		setSelectedLocalizaCandidateId(candidateId);
+
+		if (!localizaResult || localizaResult.status !== "needs_confirmation") {
+			return;
+		}
+
+		const candidate = localizaResult.candidates.find(
+			(entry) => entry.id === candidateId,
+		);
+
+		if (!candidate) {
+			return;
+		}
+
+		capturePosthogEvent("localiza_candidate_selected", {
+			...buildLocalizaAnalyticsPayload(localizaResult),
+			selectedCandidateId: candidate.id,
+			selectedCandidateLabel: candidate.label,
+			selectedCandidateScore: candidate.score,
+			selectedCandidateParcelRef14: candidate.parcelRef14,
+			selectedCandidateHasPrefillLocation: Boolean(candidate.prefillLocation),
+			selectedCandidateOfficialUrl: candidate.officialUrl,
+		});
+	};
+
 	const goToStep = (step: OnboardingStepKey) => {
 		setCurrentStep(step);
 	};
@@ -715,6 +860,8 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 	};
 
 	const resetListingDraft = () => {
+		hasTrackedLocalizaUrlPasteRef.current = false;
+		hasTrackedManualOverrideRef.current = false;
 		setLocalizaStrategy("auto");
 		setLocalizaResult(null);
 		setLocalizaError(null);
@@ -801,7 +948,20 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 				})),
 			});
 
-			router.push("/app/studio");
+			for (const listing of listings) {
+				capturePosthogEvent("listing_created", {
+					sourceType: listing.sourceType,
+					hasLocationResolution: Boolean(listing.locationResolution),
+					locationResolutionStatus: listing.locationResolution?.status,
+					officialSource: listing.locationResolution?.officialSource,
+					territoryAdapter: listing.locationResolution?.territoryAdapter,
+					requestedStrategy: listing.locationResolution?.requestedStrategy,
+					actualAcquisitionMethod:
+						listing.locationResolution?.actualAcquisitionMethod,
+				});
+			}
+
+			router.push("/app");
 		} catch (error) {
 			setSubmissionError(
 				error instanceof Error
@@ -1198,8 +1358,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 														className="mt-2"
 													/>
 												</div>
-												{listingDraft.sourceType === "idealista" &&
-												localizaEnabled ? (
+												{listingDraft.sourceType === "idealista" ? (
 													<Button
 														type="button"
 														variant="outline"
@@ -1226,8 +1385,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 													{listingSourceCopy[listingDraft.sourceType].urlHint}
 												</p>
 											) : null}
-											{listingDraft.sourceType === "idealista" &&
-											localizaEnabled ? (
+											{listingDraft.sourceType === "idealista" ? (
 												<div className="mt-4 space-y-2">
 													<div className="flex items-center justify-between gap-3">
 														<span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -1262,14 +1420,6 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 													</div>
 												</div>
 											) : null}
-											{listingDraft.sourceType === "idealista" &&
-											!localizaEnabled ? (
-												<p className="mt-2 text-sm text-muted-foreground">
-													Localiza is currently disabled in this environment.
-													Keep the Idealista URL for auditability and enter the
-													address manually.
-												</p>
-											) : null}
 										</div>
 									) : null}
 
@@ -1283,12 +1433,15 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 													/>
 													<div className="space-y-1">
 														<p className="font-medium text-foreground">
-															Checking the listing and matching it to official
-															parcel data
+															Parsing the Idealista URL, extracting listing
+															signals, and routing the request to the matching
+															official cadastre
 														</p>
 														<p className="text-muted-foreground">
-															Duplicate lookups are disabled while this request
-															is in flight.
+															Data comes from the pasted Idealista listing plus
+															the official Spanish cadastral services for the
+															detected territory. Duplicate lookups are disabled
+															while this request is in flight.
 														</p>
 													</div>
 												</div>
@@ -1336,6 +1489,16 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 														<span className="text-xs text-muted-foreground">
 															Source: {localizaResult.officialSource}
 														</span>
+														{localizaResult.territoryAdapter ? (
+															<span className="text-xs text-muted-foreground">
+																Territory:{" "}
+																{
+																	localizaTerritoryLabel[
+																		localizaResult.territoryAdapter
+																	]
+																}
+															</span>
+														) : null}
 														<span className="text-xs text-muted-foreground">
 															Confidence:{" "}
 															{Math.round(localizaResult.confidenceScore * 100)}
@@ -1385,6 +1548,19 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 															{localizaResult.sourceMetadata.externalListingId}
 														</p>
 													) : null}
+													{localizaResult.officialSourceUrl ? (
+														<p className="text-muted-foreground">
+															Official service:{" "}
+															<a
+																href={localizaResult.officialSourceUrl}
+																target="_blank"
+																rel="noreferrer"
+																className="text-primary underline underline-offset-4"
+															>
+																{localizaResult.officialSourceUrl}
+															</a>
+														</p>
+													) : null}
 													{localizaResult.evidence.reasonCodes.length > 0 ? (
 														<p className="text-muted-foreground">
 															Reason codes:{" "}
@@ -1424,7 +1600,7 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 																			candidate.id
 																		}
 																		onClick={() =>
-																			setSelectedLocalizaCandidateId(
+																			handleSelectLocalizaCandidate(
 																				candidate.id,
 																			)
 																		}
@@ -1447,6 +1623,18 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 																				Parcel: {candidate.parcelRef14}
 																			</p>
 																		) : null}
+																		{candidate.officialUrl ? (
+																			<p>
+																				<a
+																					href={candidate.officialUrl}
+																					target="_blank"
+																					rel="noreferrer"
+																					className="text-primary underline underline-offset-4"
+																				>
+																					Open official record
+																				</a>
+																			</p>
+																		) : null}
 																		{candidate.reasonCodes.length > 0 ? (
 																			<p className="text-muted-foreground">
 																				{candidate.reasonCodes.join(", ")}
@@ -1459,14 +1647,25 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 																<Button
 																	type="button"
 																	onClick={handleApplySelectedCandidate}
-																	disabled={!selectedLocalizaCandidateId}
+																	disabled={
+																		!selectedLocalizaCandidateId ||
+																		!localizaResult.candidates.find(
+																			(candidate) =>
+																				candidate.id ===
+																				selectedLocalizaCandidateId,
+																		)?.prefillLocation
+																	}
 																>
 																	Use selected candidate
 																</Button>
 																<p className="max-w-xl text-muted-foreground">
-																	Candidate selection still requires a manual
-																	confirmation step before we apply the address
-																	fields.
+																	{localizaResult.candidates.find(
+																		(candidate) =>
+																			candidate.id ===
+																			selectedLocalizaCandidateId,
+																	)?.prefillLocation
+																		? "Candidate selection still requires a manual confirmation step before we apply the address fields."
+																		: "This official candidate still needs viewer-backed confirmation. Open the official record above and keep filling the address manually below if we cannot prefill every field yet."}
 																</p>
 															</div>
 														</div>
@@ -1772,6 +1971,21 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 																		].label
 																	}
 																</p>
+																<p className="text-xs">
+																	Source:{" "}
+																	{listing.locationResolution.officialSource}
+																</p>
+																{listing.locationResolution.territoryAdapter ? (
+																	<p className="text-xs">
+																		Territory:{" "}
+																		{
+																			localizaTerritoryLabel[
+																				listing.locationResolution
+																					.territoryAdapter
+																			]
+																		}
+																	</p>
+																) : null}
 																{listing.locationResolution
 																	.requestedStrategy ? (
 																	<p className="text-xs">
@@ -1897,6 +2111,21 @@ export default function OnboardingFlow({ initialStep }: OnboardingFlowProps) {
 																].label
 															}
 														</p>
+														<p className="text-xs text-muted-foreground">
+															Source:{" "}
+															{listing.locationResolution.officialSource}
+														</p>
+														{listing.locationResolution.territoryAdapter ? (
+															<p className="text-xs text-muted-foreground">
+																Territory:{" "}
+																{
+																	localizaTerritoryLabel[
+																		listing.locationResolution
+																			.territoryAdapter
+																	]
+																}
+															</p>
+														) : null}
 														{listing.locationResolution.requestedStrategy ? (
 															<p className="text-xs text-muted-foreground">
 																Strategy:{" "}

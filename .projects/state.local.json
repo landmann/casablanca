@@ -17,6 +17,15 @@
       "requestedAt": "2026-04-17T11:00:07.362Z",
       "status": "complete"
     },
+    "firecrawl": {
+      "accountRequestId": "facctrq_61UYlq1PpUJbfE24g16UWII2PVFIRKdrcCTDbnJA0Cam",
+      "linkedAt": "2026-04-23T14:05:27.396Z",
+      "providerId": "prvdr_61URa0AjsVCYCdagK5Xqy",
+      "providerName": "Firecrawl",
+      "redirectUrl": null,
+      "requestedAt": "2026-04-23T14:05:27.396Z",
+      "status": "complete"
+    },
     "vercel": {
       "accountRequestId": "facctrq_61UWY5q6yYW6VsTC816UWII2PVFIRKdrcCTDbnJA0Rto",
       "linkedAt": "2026-04-17T11:00:38.279Z",
@@ -28,16 +37,38 @@
     }
   },
   "resources": {
+    "firecrawl-api": {
+      "configuration": {},
+      "createdAt": "2026-04-23T14:05:34.236Z",
+      "lastRevealedAt": "2026-04-23T14:05:35.093Z",
+      "lastStatus": "complete",
+      "name": "firecrawl-api",
+      "providerId": "prvdr_61URa0AjsVCYCdagK5Xqy",
+      "providerName": "Firecrawl",
+      "resourceId": "fres_61UYlq8SP8QZlZhI216UWII2PVFIRKdrcCTDbnJA0S9g",
+      "serviceId": "api"
+    },
+    "firecrawl-plan": {
+      "configuration": {},
+      "createdAt": "2026-04-23T14:05:31.258Z",
+      "lastRevealedAt": "2026-04-23T14:05:31.910Z",
+      "lastStatus": "complete",
+      "name": "firecrawl-plan",
+      "providerId": "prvdr_61URa0AjsVCYCdagK5Xqy",
+      "providerName": "Firecrawl",
+      "resourceId": "fres_61UYlq5ADeKDqU5JH16UWII2PVFIRKdrcCTDbnJA06s4",
+      "serviceId": "free"
+    },
     "Vercel-plan": {
+      "configuration": {},
+      "createdAt": "2026-04-17T11:00:40.499Z",
+      "lastRevealedAt": null,
+      "lastStatus": "complete",
       "name": "Vercel-plan",
       "providerId": "prvdr_61ULUAr4zlQgZkvXY5LsG",
       "providerName": "Vercel",
-      "serviceId": "hobby",
       "resourceId": "fres_61UWY5wa1s4cAxErb16UWII2PVFIRKdrcCTDbnJA0X0i",
-      "createdAt": "2026-04-17T11:00:40.499Z",
-      "lastStatus": "complete",
-      "lastRevealedAt": null,
-      "configuration": {}
+      "serviceId": "hobby"
     },
     "Vercel/project": {
       "configuration": {},

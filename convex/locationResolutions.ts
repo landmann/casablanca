@@ -24,6 +24,14 @@ const acquisitionMethodValidator = v.union(
   v.literal("browser_worker")
 );
 
+const territoryAdapterValidator = v.union(
+  v.literal("state_catastro"),
+  v.literal("navarra_rtn"),
+  v.literal("alava_catastro"),
+  v.literal("bizkaia_catastro"),
+  v.literal("gipuzkoa_catastro")
+);
+
 const locationResolutionResultStatusValidator = v.union(
   v.literal("exact_match"),
   v.literal("building_match"),
@@ -45,6 +53,8 @@ const resolutionEvidenceValidator = v.object({
   requestedStrategy: requestedStrategyValidator,
   actualAcquisitionMethod: v.optional(acquisitionMethodValidator),
   officialSource: v.string(),
+  officialSourceUrl: v.optional(v.string()),
+  territoryAdapter: v.optional(territoryAdapterValidator),
 });
 
 const resolutionCandidateValidator = v.object({
@@ -52,6 +62,7 @@ const resolutionCandidateValidator = v.object({
   label: v.string(),
   parcelRef14: v.optional(v.string()),
   unitRef20: v.optional(v.string()),
+  officialUrl: v.optional(v.string()),
   distanceMeters: v.optional(v.number()),
   score: v.number(),
   reasonCodes: v.array(v.string()),
@@ -63,6 +74,8 @@ const resolveIdealistaLocationResultValidator = v.object({
   requestedStrategy: requestedStrategyValidator,
   confidenceScore: v.number(),
   officialSource: v.string(),
+  officialSourceUrl: v.optional(v.string()),
+  territoryAdapter: v.optional(territoryAdapterValidator),
   resolverVersion: v.string(),
   resolvedAt: v.string(),
   resolvedAddressLabel: v.optional(v.string()),

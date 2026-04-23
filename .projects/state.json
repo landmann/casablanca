@@ -4,11 +4,24 @@
     "clerk": {
       "name": "Clerk"
     },
+    "firecrawl": {
+      "name": "Firecrawl"
+    },
     "vercel": {
       "name": "Vercel"
     }
   },
   "resources": {
+    "firecrawl-api": {
+      "name": "firecrawl-api",
+      "providerName": "Firecrawl",
+      "serviceId": "api"
+    },
+    "firecrawl-plan": {
+      "name": "firecrawl-plan",
+      "providerName": "Firecrawl",
+      "serviceId": "free"
+    },
     "Vercel-plan": {
       "name": "Vercel-plan",
       "providerName": "Vercel",

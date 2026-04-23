@@ -7,8 +7,6 @@ import type {
   ResolveIdealistaLocationResult,
 } from "@casedra/types";
 
-import { env } from "@/env";
-
 import { resolveStateCatastro } from "./catastro-state";
 import { browserWorkerAdapter } from "./browser-worker-adapter";
 import { firecrawlAdapter } from "./firecrawl-adapter";
@@ -17,13 +15,19 @@ import { LocalizaServiceError } from "./errors";
 import type {
   LocalizaAdapter,
   LocalizaAdapterMethod,
+  LocalizaAdapterOutput,
   LocalizaCachedResolutionRecord,
   LocalizaClaimLeaseResult,
   LocalizaOfficialResolution,
   LocalizaResolutionContext,
+  LocalizaTerritoryAdapter,
+} from "./types";
+import {
+  officialSourceLabelByTerritory,
+  officialSourceUrlByTerritory,
 } from "./types";
 
-export const LOCALIZA_RESOLVER_VERSION = "localiza-bootstrap-2026-04-23";
+export const LOCALIZA_RESOLVER_VERSION = "localiza-bootstrap-2026-04-23.2";
 
 const IDEALISTA_HOSTS = new Set(["idealista.com", "www.idealista.com"]);
 const IDEALISTA_LISTING_PATH = /^\/inmueble\/(\d+)\/?$/;
@@ -98,7 +102,7 @@ const sleep = (ms: number) =>
 const withTimeout = async <T>(
   operation: (signal: AbortSignal) => Promise<T>,
   timeoutMs: number,
-  label: string
+  label: string,
 ) => {
   const abortController = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -122,13 +126,73 @@ const withTimeout = async <T>(
   }
 };
 
-const dedupe = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
+const dedupe = (values: string[]) =>
+  Array.from(new Set(values.filter(Boolean)));
 
-const buildCacheExpiryIso = (expiresAt: number) => new Date(expiresAt).toISOString();
+const buildCacheExpiryIso = (expiresAt: number) =>
+  new Date(expiresAt).toISOString();
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "Unknown Localiza error.";
+
+const logLocalizaEvent = (
+  level: "info" | "warn" | "error",
+  event: string,
+  payload: Record<string, unknown>,
+) => {
+  const serialized = JSON.stringify({
+    scope: "localiza",
+    event,
+    timestamp: new Date().toISOString(),
+    ...payload,
+  });
+
+  if (level === "error") {
+    console.error(serialized);
+    return;
+  }
+
+  if (level === "warn") {
+    console.warn(serialized);
+    return;
+  }
+
+  console.info(serialized);
+};
+
+const getOfficialSourceDetails = (
+  territoryAdapter?: LocalizaTerritoryAdapter,
+) => ({
+  officialSource: territoryAdapter
+    ? officialSourceLabelByTerritory[territoryAdapter]
+    : "Pending official cadastral verification",
+  officialSourceUrl: territoryAdapter
+    ? officialSourceUrlByTerritory[territoryAdapter]
+    : undefined,
+  territoryAdapter,
+});
+
+const getCadastreFailureDetails = (error: unknown) => {
+  const message = getErrorMessage(error);
+  const territoryAdapter = (
+    [
+      "state_catastro",
+      "navarra_rtn",
+      "alava_catastro",
+      "bizkaia_catastro",
+      "gipuzkoa_catastro",
+    ] as const
+  ).find((adapter) => message.startsWith(`${adapter}_`));
+
+  return {
+    reasonCode: territoryAdapter ? message : "state_catastro_failed",
+    ...getOfficialSourceDetails(territoryAdapter),
+  };
+};
 
 const isFreshCachedResult = (
   record: LocalizaCachedResolutionRecord | null,
-  now: number
+  now: number,
 ): record is LocalizaCachedResolutionRecord & {
   result: ResolveIdealistaLocationResult;
 } => record !== null && Boolean(record.result) && record.expiresAt > now;
@@ -150,6 +214,8 @@ const buildUnresolvedResult = (input: {
   actualAcquisitionMethod?: ResolveIdealistaLocationResult["evidence"]["actualAcquisitionMethod"];
   resolvedAt: string;
   officialSource?: string;
+  officialSourceUrl?: string;
+  territoryAdapter?: LocalizaTerritoryAdapter;
   confidenceScore?: number;
   candidates?: ResolveIdealistaLocationResult["candidates"];
   resolvedAddressLabel?: string;
@@ -162,6 +228,8 @@ const buildUnresolvedResult = (input: {
   confidenceScore: input.confidenceScore ?? 0,
   officialSource:
     input.officialSource ?? "Pending official cadastral verification",
+  officialSourceUrl: input.officialSourceUrl,
+  territoryAdapter: input.territoryAdapter,
   resolverVersion: input.context.resolverVersion,
   resolvedAt: input.resolvedAt,
   resolvedAddressLabel: input.resolvedAddressLabel,
@@ -178,6 +246,8 @@ const buildUnresolvedResult = (input: {
     actualAcquisitionMethod: input.actualAcquisitionMethod,
     officialSource:
       input.officialSource ?? "Pending official cadastral verification",
+    officialSourceUrl: input.officialSourceUrl,
+    territoryAdapter: input.territoryAdapter,
   },
   sourceMetadata: input.context.sourceMetadata,
 });
@@ -191,6 +261,9 @@ const buildResultFromOfficialResolution = (input: {
   adapterDiscardedSignals: string[];
   resolvedAt: string;
 }): ResolveIdealistaLocationResult => {
+  const officialSourceDetails = getOfficialSourceDetails(
+    input.officialResolution.territoryAdapter,
+  );
   const mergedReasonCodes = dedupe([
     "listing_id_parsed",
     ...input.adapterReasonCodes,
@@ -215,6 +288,8 @@ const buildResultFromOfficialResolution = (input: {
       actualAcquisitionMethod: input.actualAcquisitionMethod,
       resolvedAt: input.resolvedAt,
       officialSource: input.officialResolution.officialSource,
+      officialSourceUrl: officialSourceDetails.officialSourceUrl,
+      territoryAdapter: input.officialResolution.territoryAdapter,
       confidenceScore: input.officialResolution.confidenceScore,
       candidates: input.officialResolution.candidates,
       resolvedAddressLabel: input.officialResolution.resolvedAddressLabel,
@@ -229,6 +304,8 @@ const buildResultFromOfficialResolution = (input: {
     requestedStrategy: input.context.requestedStrategy,
     confidenceScore: input.officialResolution.confidenceScore,
     officialSource: input.officialResolution.officialSource,
+    officialSourceUrl: officialSourceDetails.officialSourceUrl,
+    territoryAdapter: input.officialResolution.territoryAdapter,
     resolverVersion: input.context.resolverVersion,
     resolvedAt: input.resolvedAt,
     resolvedAddressLabel: input.officialResolution.resolvedAddressLabel,
@@ -244,6 +321,8 @@ const buildResultFromOfficialResolution = (input: {
       requestedStrategy: input.context.requestedStrategy,
       actualAcquisitionMethod: input.actualAcquisitionMethod,
       officialSource: input.officialResolution.officialSource,
+      officialSourceUrl: officialSourceDetails.officialSourceUrl,
+      territoryAdapter: input.officialResolution.territoryAdapter,
     },
     sourceMetadata: input.context.sourceMetadata,
   };
@@ -251,11 +330,55 @@ const buildResultFromOfficialResolution = (input: {
 
 const attachCacheExpiry = (
   result: ResolveIdealistaLocationResult,
-  expiresAt: number
+  expiresAt: number,
 ): ResolveIdealistaLocationResult => ({
   ...result,
   cacheExpiresAt: buildCacheExpiryIso(expiresAt),
 });
+
+const buildCadastreFailureResult = (input: {
+  context: LocalizaResolutionContext;
+  adapterOutput: {
+    signals: IdealistaSignals;
+    matchedSignals: string[];
+    discardedSignals: string[];
+    reasonCodes: string[];
+  };
+  error: unknown;
+  resolvedAt: string;
+}) => {
+  const cadastreFailure = getCadastreFailureDetails(input.error);
+
+  return {
+    result: buildUnresolvedResult({
+      context: input.context,
+      reasonCodes: [
+        "listing_id_parsed",
+        ...input.adapterOutput.reasonCodes,
+        "official_cadastre_failed",
+        cadastreFailure.reasonCode,
+      ],
+      matchedSignals: [
+        ...input.adapterOutput.matchedSignals,
+        "official_source_attempted",
+      ],
+      discardedSignals: [
+        ...input.adapterOutput.discardedSignals,
+        ...(cadastreFailure.territoryAdapter
+          ? [cadastreFailure.territoryAdapter]
+          : []),
+      ],
+      actualAcquisitionMethod: input.adapterOutput.signals.acquisitionMethod,
+      resolvedAt: input.resolvedAt,
+      officialSource: cadastreFailure.officialSource,
+      officialSourceUrl: cadastreFailure.officialSourceUrl,
+      territoryAdapter: cadastreFailure.territoryAdapter,
+    }),
+    normalizedSignals: input.adapterOutput.signals,
+    errorCode: "official_cadastre_failed",
+    errorMessage: getErrorMessage(input.error),
+  };
+};
 
 const normalizeIdealistaUrl = (value: string) => {
   let parsedUrl: URL;
@@ -265,14 +388,14 @@ const normalizeIdealistaUrl = (value: string) => {
   } catch {
     throw new LocalizaServiceError(
       "invalid_url",
-      "Enter a valid Idealista listing URL."
+      "Enter a valid Idealista listing URL.",
     );
   }
 
   if (!IDEALISTA_HOSTS.has(parsedUrl.hostname)) {
     throw new LocalizaServiceError(
       "unsupported_url",
-      "Use a listing URL from idealista.com."
+      "Use a listing URL from idealista.com.",
     );
   }
 
@@ -281,7 +404,7 @@ const normalizeIdealistaUrl = (value: string) => {
   if (!match) {
     throw new LocalizaServiceError(
       "unsupported_url",
-      "Use an Idealista property URL in the /inmueble/<id>/ format."
+      "Use an Idealista property URL in the /inmueble/<id>/ format.",
     );
   }
 
@@ -292,16 +415,17 @@ const normalizeIdealistaUrl = (value: string) => {
 };
 
 const resolveStrategySequence = (
-  requestedStrategy: LocalizaAcquisitionStrategy
+  requestedStrategy: LocalizaAcquisitionStrategy,
 ): LocalizaAdapterMethod[] =>
   requestedStrategy === "auto" ? autoStrategyOrder : [requestedStrategy];
 
-const getResultCacheTtlMs = (status: ResolveIdealistaLocationResult["status"]) =>
-  status === "unresolved" ? UNRESOLVED_CACHE_TTL_MS : SUCCESS_CACHE_TTL_MS;
+const getResultCacheTtlMs = (
+  status: ResolveIdealistaLocationResult["status"],
+) => (status === "unresolved" ? UNRESOLVED_CACHE_TTL_MS : SUCCESS_CACHE_TTL_MS);
 
 const loadCachedRecord = async (
   convex: ConvexHttpClient,
-  context: LocalizaResolutionContext
+  context: LocalizaResolutionContext,
 ) =>
   await convex.query(getLocationResolutionByLookupRef, {
     provider: context.sourceMetadata.provider,
@@ -363,7 +487,9 @@ const resolveSignalsViaAdapters = async (input: {
   externalListingId: string;
   deadlineAt: number;
 }) => {
-  const strategySequence = resolveStrategySequence(input.context.requestedStrategy);
+  const strategySequence = resolveStrategySequence(
+    input.context.requestedStrategy,
+  );
   const adapterFailureCodes: string[] = [];
 
   for (const strategy of strategySequence) {
@@ -371,6 +497,12 @@ const resolveSignalsViaAdapters = async (input: {
 
     if (!adapter.isConfigured()) {
       adapterFailureCodes.push(`${strategy}_not_configured`);
+      logLocalizaEvent("warn", "adapter_not_configured", {
+        externalListingId: input.externalListingId,
+        requestedStrategy: input.context.requestedStrategy,
+        attemptedAdapter: strategy,
+        resolverVersion: input.context.resolverVersion,
+      });
 
       if (input.context.requestedStrategy !== "auto") {
         return {
@@ -394,8 +526,16 @@ const resolveSignalsViaAdapters = async (input: {
       continue;
     }
 
+    let adapterOutput: LocalizaAdapterOutput;
+
     try {
-      const adapterOutput = await withTimeout(
+      logLocalizaEvent("info", "adapter_started", {
+        externalListingId: input.externalListingId,
+        requestedStrategy: input.context.requestedStrategy,
+        attemptedAdapter: strategy,
+        resolverVersion: input.context.resolverVersion,
+      });
+      adapterOutput = await withTimeout(
         (signal) =>
           adapter.acquireSignals({
             listingId: input.externalListingId,
@@ -403,64 +543,30 @@ const resolveSignalsViaAdapters = async (input: {
             signal,
           }),
         adapter.timeoutMs,
-        adapter.method
+        adapter.method,
       );
-
-      const remainingDeadlineMs = input.deadlineAt - Date.now();
-
-      if (remainingDeadlineMs <= 0) {
-        return {
-          result: buildUnresolvedResult({
-            context: input.context,
-            reasonCodes: [
-              "listing_id_parsed",
-              ...adapterOutput.reasonCodes,
-              "resolver_deadline_exceeded",
-            ],
-            matchedSignals: adapterOutput.matchedSignals,
-            discardedSignals: adapterOutput.discardedSignals,
-            actualAcquisitionMethod: adapterOutput.signals.acquisitionMethod,
-            resolvedAt: new Date().toISOString(),
-          }),
-          normalizedSignals: adapterOutput.signals,
-          errorCode: "resolver_deadline_exceeded",
-          errorMessage: "The resolver deadline was exceeded before official matching.",
-        };
-      }
-
-      const officialResolution = await withTimeout(
-        (signal) =>
-          resolveStateCatastro({
-            signals: adapterOutput.signals,
-            signal,
-          }),
-        remainingDeadlineMs,
-        "state_catastro"
-      );
-      const resolvedAt = new Date().toISOString();
-
-      return {
-        result: buildResultFromOfficialResolution({
-          context: input.context,
-          officialResolution,
-          actualAcquisitionMethod: adapterOutput.signals.acquisitionMethod,
-          adapterReasonCodes: adapterOutput.reasonCodes,
-          adapterMatchedSignals: adapterOutput.matchedSignals,
-          adapterDiscardedSignals: adapterOutput.discardedSignals,
-          resolvedAt,
-        }),
-        normalizedSignals: adapterOutput.signals,
-        errorCode:
-          officialResolution.status === "unresolved"
-            ? "official_resolution_unresolved"
-            : undefined,
-        errorMessage:
-          officialResolution.status === "unresolved"
-            ? "Official cadastral matching did not produce a verified result."
-            : undefined,
-      };
+      logLocalizaEvent("info", "adapter_completed", {
+        externalListingId: input.externalListingId,
+        requestedStrategy: input.context.requestedStrategy,
+        attemptedAdapter: strategy,
+        acquisitionMethod: adapterOutput.signals.acquisitionMethod,
+        hasCoordinates:
+          adapterOutput.signals.approximateLat !== undefined &&
+          adapterOutput.signals.approximateLng !== undefined,
+        hasMunicipality: Boolean(adapterOutput.signals.municipality),
+        hasProvince: Boolean(adapterOutput.signals.province),
+        hasPostalCode: Boolean(adapterOutput.signals.postalCodeHint),
+        resolverVersion: input.context.resolverVersion,
+      });
     } catch (error) {
       adapterFailureCodes.push(`${strategy}_failed`);
+      logLocalizaEvent("warn", "adapter_failed", {
+        externalListingId: input.externalListingId,
+        requestedStrategy: input.context.requestedStrategy,
+        attemptedAdapter: strategy,
+        errorMessage: getErrorMessage(error),
+        resolverVersion: input.context.resolverVersion,
+      });
 
       if (input.context.requestedStrategy !== "auto") {
         return {
@@ -477,12 +583,118 @@ const resolveSignalsViaAdapters = async (input: {
           }),
           normalizedSignals: undefined,
           errorCode: "adapter_failed",
-          errorMessage:
-            error instanceof Error ? error.message : "The selected adapter failed.",
+          errorMessage: getErrorMessage(error),
         };
       }
+
+      continue;
     }
+
+    const remainingDeadlineMs = input.deadlineAt - Date.now();
+
+    if (remainingDeadlineMs <= 0) {
+      return {
+        result: buildUnresolvedResult({
+          context: input.context,
+          reasonCodes: [
+            "listing_id_parsed",
+            ...adapterOutput.reasonCodes,
+            "resolver_deadline_exceeded",
+          ],
+          matchedSignals: adapterOutput.matchedSignals,
+          discardedSignals: adapterOutput.discardedSignals,
+          actualAcquisitionMethod: adapterOutput.signals.acquisitionMethod,
+          resolvedAt: new Date().toISOString(),
+        }),
+        normalizedSignals: adapterOutput.signals,
+        errorCode: "resolver_deadline_exceeded",
+        errorMessage:
+          "The resolver deadline was exceeded before official matching.",
+      };
+    }
+
+    let officialResolution: LocalizaOfficialResolution;
+
+    try {
+      logLocalizaEvent("info", "cadastre_resolution_started", {
+        externalListingId: input.externalListingId,
+        requestedStrategy: input.context.requestedStrategy,
+        acquisitionMethod: adapterOutput.signals.acquisitionMethod,
+        resolverVersion: input.context.resolverVersion,
+      });
+      officialResolution = await withTimeout(
+        (signal) =>
+          resolveStateCatastro({
+            signals: adapterOutput.signals,
+            signal,
+          }),
+        remainingDeadlineMs,
+        "state_catastro",
+      );
+    } catch (error) {
+      const cadastreFailure = getCadastreFailureDetails(error);
+      logLocalizaEvent("error", "cadastre_resolution_failed", {
+        externalListingId: input.externalListingId,
+        requestedStrategy: input.context.requestedStrategy,
+        acquisitionMethod: adapterOutput.signals.acquisitionMethod,
+        territoryAdapter: cadastreFailure.territoryAdapter,
+        officialSource: cadastreFailure.officialSource,
+        officialSourceUrl: cadastreFailure.officialSourceUrl,
+        errorMessage: getErrorMessage(error),
+        resolverVersion: input.context.resolverVersion,
+      });
+      return buildCadastreFailureResult({
+        context: input.context,
+        adapterOutput,
+        error,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+
+    const resolvedAt = new Date().toISOString();
+    const result = buildResultFromOfficialResolution({
+      context: input.context,
+      officialResolution,
+      actualAcquisitionMethod: adapterOutput.signals.acquisitionMethod,
+      adapterReasonCodes: adapterOutput.reasonCodes,
+      adapterMatchedSignals: adapterOutput.matchedSignals,
+      adapterDiscardedSignals: adapterOutput.discardedSignals,
+      resolvedAt,
+    });
+
+    logLocalizaEvent("info", "cadastre_resolution_completed", {
+      externalListingId: input.externalListingId,
+      requestedStrategy: input.context.requestedStrategy,
+      acquisitionMethod: adapterOutput.signals.acquisitionMethod,
+      territoryAdapter: officialResolution.territoryAdapter,
+      officialSource: result.officialSource,
+      officialSourceUrl: result.officialSourceUrl,
+      status: result.status,
+      candidateCount: result.candidates.length,
+      confidenceScore: result.confidenceScore,
+      resolverVersion: input.context.resolverVersion,
+    });
+
+    return {
+      result,
+      normalizedSignals: adapterOutput.signals,
+      errorCode:
+        officialResolution.status === "unresolved"
+          ? "official_resolution_unresolved"
+          : undefined,
+      errorMessage:
+        officialResolution.status === "unresolved"
+          ? "Official cadastral matching did not produce a verified result."
+          : undefined,
+    };
   }
+
+  logLocalizaEvent("warn", "resolver_no_adapter_available", {
+    externalListingId: input.externalListingId,
+    requestedStrategy: input.context.requestedStrategy,
+    adapterFailureCodes,
+    resolverVersion: input.context.resolverVersion,
+  });
 
   return {
     result: buildUnresolvedResult({
@@ -515,13 +727,6 @@ export const resolveIdealistaLocation = async (input: {
   url: string;
   strategy: LocalizaAcquisitionStrategy;
 }) => {
-  if (!env.LOCALIZA_ENABLED) {
-    throw new LocalizaServiceError(
-      "feature_disabled",
-      "Localiza is not enabled in this environment."
-    );
-  }
-
   const normalized = normalizeIdealistaUrl(input.url);
   const now = Date.now();
   const deadlineAt = now + OVERALL_DEADLINE_MS;
@@ -531,34 +736,69 @@ export const resolveIdealistaLocation = async (input: {
     resolverVersion: LOCALIZA_RESOLVER_VERSION,
   };
 
+  logLocalizaEvent("info", "resolver_started", {
+    externalListingId: context.sourceMetadata.externalListingId,
+    requestedStrategy: context.requestedStrategy,
+    resolverVersion: context.resolverVersion,
+  });
+
   const cachedRecord = await loadCachedRecord(input.convex, context);
 
   if (isFreshCachedResult(cachedRecord, now)) {
+    logLocalizaEvent("info", "resolver_cache_hit", {
+      externalListingId: context.sourceMetadata.externalListingId,
+      requestedStrategy: context.requestedStrategy,
+      resolverVersion: context.resolverVersion,
+      status: cachedRecord.result.status,
+      officialSource: cachedRecord.result.officialSource,
+      officialSourceUrl: cachedRecord.result.officialSourceUrl,
+      territoryAdapter: cachedRecord.result.territoryAdapter,
+    });
     return attachCacheExpiry(cachedRecord.result, cachedRecord.expiresAt);
   }
 
   const leaseOwner = crypto.randomUUID();
-  const leaseResult = await input.convex.mutation(claimLocationResolutionLeaseRef, {
-    provider: context.sourceMetadata.provider,
-    externalListingId: context.sourceMetadata.externalListingId,
-    sourceUrl: context.sourceMetadata.sourceUrl,
-    requestedStrategy: context.requestedStrategy,
-    resolverVersion: context.resolverVersion,
-    leaseOwner,
-    leaseDurationMs: LEASE_DURATION_MS,
-    defaultExpiresAt: now + UNRESOLVED_CACHE_TTL_MS,
-    now,
-  });
+  const leaseResult = await input.convex.mutation(
+    claimLocationResolutionLeaseRef,
+    {
+      provider: context.sourceMetadata.provider,
+      externalListingId: context.sourceMetadata.externalListingId,
+      sourceUrl: context.sourceMetadata.sourceUrl,
+      requestedStrategy: context.requestedStrategy,
+      resolverVersion: context.resolverVersion,
+      leaseOwner,
+      leaseDurationMs: LEASE_DURATION_MS,
+      defaultExpiresAt: now + UNRESOLVED_CACHE_TTL_MS,
+      now,
+    },
+  );
 
   if (leaseResult.kind === "cached") {
     const cachedAfterLease = await loadCachedRecord(input.convex, context);
 
     if (isFreshCachedResult(cachedAfterLease, Date.now())) {
-      return attachCacheExpiry(cachedAfterLease.result, cachedAfterLease.expiresAt);
+      logLocalizaEvent("info", "resolver_cache_hit_after_lease", {
+        externalListingId: context.sourceMetadata.externalListingId,
+        requestedStrategy: context.requestedStrategy,
+        resolverVersion: context.resolverVersion,
+        status: cachedAfterLease.result.status,
+        officialSource: cachedAfterLease.result.officialSource,
+        officialSourceUrl: cachedAfterLease.result.officialSourceUrl,
+        territoryAdapter: cachedAfterLease.result.territoryAdapter,
+      });
+      return attachCacheExpiry(
+        cachedAfterLease.result,
+        cachedAfterLease.expiresAt,
+      );
     }
   }
 
   if (leaseResult.kind === "in_flight") {
+    logLocalizaEvent("info", "resolver_waiting_for_in_flight_result", {
+      externalListingId: context.sourceMetadata.externalListingId,
+      requestedStrategy: context.requestedStrategy,
+      resolverVersion: context.resolverVersion,
+    });
     const inFlightResult = await waitForInFlightResolution({
       convex: input.convex,
       context,
@@ -566,9 +806,23 @@ export const resolveIdealistaLocation = async (input: {
     });
 
     if (inFlightResult) {
+      logLocalizaEvent("info", "resolver_reused_in_flight_result", {
+        externalListingId: context.sourceMetadata.externalListingId,
+        requestedStrategy: context.requestedStrategy,
+        resolverVersion: context.resolverVersion,
+        status: inFlightResult.status,
+        officialSource: inFlightResult.officialSource,
+        officialSourceUrl: inFlightResult.officialSourceUrl,
+        territoryAdapter: inFlightResult.territoryAdapter,
+      });
       return inFlightResult;
     }
 
+    logLocalizaEvent("warn", "resolver_in_flight_wait_timed_out", {
+      externalListingId: context.sourceMetadata.externalListingId,
+      requestedStrategy: context.requestedStrategy,
+      resolverVersion: context.resolverVersion,
+    });
     return buildUnresolvedResult({
       context,
       reasonCodes: [
@@ -591,7 +845,7 @@ export const resolveIdealistaLocation = async (input: {
   const expiresAt =
     Date.now() + getResultCacheTtlMs(adapterResolution.result.status);
 
-  return await persistResult({
+  const persistedResult = await persistResult({
     convex: input.convex,
     context,
     result: adapterResolution.result,
@@ -601,4 +855,20 @@ export const resolveIdealistaLocation = async (input: {
     errorCode: adapterResolution.errorCode,
     errorMessage: adapterResolution.errorMessage,
   });
+
+  logLocalizaEvent("info", "resolver_completed", {
+    externalListingId: context.sourceMetadata.externalListingId,
+    requestedStrategy: context.requestedStrategy,
+    resolverVersion: context.resolverVersion,
+    status: persistedResult.status,
+    officialSource: persistedResult.officialSource,
+    officialSourceUrl: persistedResult.officialSourceUrl,
+    territoryAdapter: persistedResult.territoryAdapter,
+    actualAcquisitionMethod: persistedResult.evidence.actualAcquisitionMethod,
+    candidateCount: persistedResult.candidates.length,
+    confidenceScore: persistedResult.confidenceScore,
+    cacheExpiresAt: persistedResult.cacheExpiresAt,
+  });
+
+  return persistedResult;
 };

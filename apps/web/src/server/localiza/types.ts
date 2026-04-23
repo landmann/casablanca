@@ -73,6 +73,30 @@ export type LocalizaTerritoryAdapter =
   | "bizkaia_catastro"
   | "gipuzkoa_catastro";
 
+export const officialSourceLabelByTerritory: Record<
+  LocalizaTerritoryAdapter,
+  string
+> = {
+  state_catastro: "Dirección General del Catastro",
+  navarra_rtn: "Registro de la Riqueza Territorial de Navarra",
+  alava_catastro: "Catastro de Alava",
+  bizkaia_catastro: "Catastro de Bizkaia",
+  gipuzkoa_catastro: "Catastro de Gipuzkoa",
+};
+
+export const officialSourceUrlByTerritory: Record<
+  LocalizaTerritoryAdapter,
+  string
+> = {
+  state_catastro: "https://ovc.catastro.meh.es/INSPIRE/wfsAD.aspx",
+  navarra_rtn: "https://inspire.navarra.es/services/AD/wfs",
+  alava_catastro:
+    "https://geo.araba.eus/geoaraba/services/OGC_ARABA/WFS_Katastroa/MapServer/WFSServer",
+  bizkaia_catastro:
+    "https://geo.bizkaia.eus/arcgisserverinspire/rest/services/Catastro/Annex1/MapServer",
+  gipuzkoa_catastro: "https://b5m.gipuzkoa.eus/ogc/wfs/gipuzkoa_wfs",
+};
+
 export interface LocalizaOfficialResolution {
   status: ResolveIdealistaLocationResult["status"];
   confidenceScore: number;

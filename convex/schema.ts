@@ -54,10 +54,20 @@ const acquisitionMethodValidator = v.union(
 	v.literal("browser_worker"),
 );
 
+const territoryAdapterValidator = v.union(
+	v.literal("state_catastro"),
+	v.literal("navarra_rtn"),
+	v.literal("alava_catastro"),
+	v.literal("bizkaia_catastro"),
+	v.literal("gipuzkoa_catastro"),
+);
+
 const listingLocationResolutionValidator = v.object({
 	status: locationResolutionStatusValidator,
 	confidenceScore: v.number(),
 	officialSource: v.string(),
+	officialSourceUrl: v.optional(v.string()),
+	territoryAdapter: v.optional(territoryAdapterValidator),
 	requestedStrategy: v.optional(requestedStrategyValidator),
 	actualAcquisitionMethod: v.optional(acquisitionMethodValidator),
 	parcelRef14: v.optional(v.string()),
@@ -73,6 +83,7 @@ const resolveLocationCandidateValidator = v.object({
 	label: v.string(),
 	parcelRef14: v.optional(v.string()),
 	unitRef20: v.optional(v.string()),
+	officialUrl: v.optional(v.string()),
 	distanceMeters: v.optional(v.number()),
 	score: v.number(),
 	reasonCodes: v.array(v.string()),
@@ -87,6 +98,8 @@ const resolutionEvidenceValidator = v.object({
 	requestedStrategy: requestedStrategyValidator,
 	actualAcquisitionMethod: v.optional(acquisitionMethodValidator),
 	officialSource: v.string(),
+	officialSourceUrl: v.optional(v.string()),
+	territoryAdapter: v.optional(territoryAdapterValidator),
 });
 
 const resolveIdealistaLocationResultValidator = v.object({
@@ -99,6 +112,8 @@ const resolveIdealistaLocationResultValidator = v.object({
 	requestedStrategy: requestedStrategyValidator,
 	confidenceScore: v.number(),
 	officialSource: v.string(),
+	officialSourceUrl: v.optional(v.string()),
+	territoryAdapter: v.optional(territoryAdapterValidator),
 	resolverVersion: v.string(),
 	resolvedAt: v.string(),
 	resolvedAddressLabel: v.optional(v.string()),
@@ -256,7 +271,9 @@ const channels = defineTable({
 	config: v.optional(v.any()),
 	createdAt: v.number(),
 	updatedAt: v.number(),
-}).index("by_agency", ["agencyId"]);
+})
+	.index("by_agency", ["agencyId"])
+	.index("by_agency_and_external_id", ["agencyId", "externalChannelId"]);
 
 const contacts = defineTable({
 	agencyId: v.id("agencies"),
@@ -286,7 +303,8 @@ const leads = defineTable({
 	updatedAt: v.number(),
 })
 	.index("by_agency", ["agencyId", "receivedAt"])
-	.index("by_contact", ["contactId"]);
+	.index("by_contact", ["contactId"])
+	.index("by_external_lead", ["agencyId", "externalLeadId"]);
 
 const conversations = defineTable({
 	agencyId: v.id("agencies"),
@@ -331,7 +349,9 @@ const messages = defineTable({
 	sentAt: v.number(),
 	metadata: v.optional(v.any()),
 	createdAt: v.number(),
-}).index("by_conversation", ["conversationId", "sentAt", "createdAt"]);
+})
+	.index("by_conversation", ["conversationId", "sentAt", "createdAt"])
+	.index("by_dedupe_key", ["agencyId", "dedupeKey"]);
 
 const assignments = defineTable({
 	agencyId: v.id("agencies"),
@@ -355,7 +375,9 @@ const handoffEvents = defineTable({
 	summarySnapshot: v.optional(v.string()),
 	recommendation: v.optional(v.string()),
 	createdAt: v.number(),
-}).index("by_conversation", ["conversationId", "createdAt"]);
+})
+	.index("by_conversation", ["conversationId", "createdAt"])
+	.index("by_agency", ["agencyId", "createdAt"]);
 
 const performanceSnapshots = defineTable({
 	agencyId: v.id("agencies"),

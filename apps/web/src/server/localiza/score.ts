@@ -2,6 +2,10 @@ import type { IdealistaSignals } from "@casedra/types";
 
 import type { LocalizaTerritoryAdapter } from "./types";
 
+const TERRITORY_REVERSE_GEOCODE_URL =
+  "https://geolocalizador.idee.es/v1/reverse";
+const TERRITORY_REVERSE_GEOCODE_TIMEOUT_MS = 1_500;
+
 const provinceNamesByCode: Record<string, string> = {
   "01": "Alava",
   "02": "Albacete",
@@ -116,8 +120,31 @@ const titleCaseMinorWords = new Set([
   "dos",
 ]);
 
+const designatorContextPrefixes = [
+  "portal",
+  "puerta",
+  "numero",
+  "num",
+  "n",
+  "no",
+  "bloque",
+  "escalera",
+];
+
+interface TerritoryReverseGeocodeResponse {
+  features?: Array<{
+    properties?: {
+      region?: string;
+      macroregion?: string;
+    };
+  }>;
+}
+
 const stripDiacritics = (value: string) =>
   value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const normalizeLocalizaText = (value?: string) =>
   stripDiacritics((value ?? "").toLowerCase())
@@ -183,7 +210,7 @@ export const buildListingSignalCorpus = (signals: IdealistaSignals) =>
       signals.postalCodeHint,
     ]
       .filter(Boolean)
-      .join(" ")
+      .join(" "),
   );
 
 export const buildSearchRadii = (mapPrecisionMeters?: number) => {
@@ -197,8 +224,14 @@ export const buildSearchRadii = (mapPrecisionMeters?: number) => {
 
 const dedupeNumbers = (values: number[]) => Array.from(new Set(values));
 
-export const convertWgs84ToWebMercator = (latitude: number, longitude: number) => {
-  const clampedLatitude = Math.min(Math.max(latitude, -85.05112878), 85.05112878);
+export const convertWgs84ToWebMercator = (
+  latitude: number,
+  longitude: number,
+) => {
+  const clampedLatitude = Math.min(
+    Math.max(latitude, -85.05112878),
+    85.05112878,
+  );
   const x = (longitude * 20037508.34) / 180;
   const y =
     (Math.log(Math.tan(((90 + clampedLatitude) * Math.PI) / 360)) /
@@ -210,7 +243,7 @@ export const convertWgs84ToWebMercator = (latitude: number, longitude: number) =
 
 export const distanceBetweenPoints = (
   left: { x: number; y: number },
-  right: { x: number; y: number }
+  right: { x: number; y: number },
 ) => Math.hypot(left.x - right.x, left.y - right.y);
 
 export const getProvinceNameFromCode = (provinceCode?: string) =>
@@ -218,14 +251,14 @@ export const getProvinceNameFromCode = (provinceCode?: string) =>
 
 export const provinceMatchesHint = (
   provinceCode: string | undefined,
-  provinceHint: string | undefined
+  provinceHint: string | undefined,
 ) => {
   if (!provinceHint) {
     return true;
   }
 
   const candidateProvince = normalizeLocalizaText(
-    getProvinceNameFromCode(provinceCode)
+    getProvinceNameFromCode(provinceCode),
   );
   const normalizedHint = normalizeLocalizaText(provinceHint);
 
@@ -236,18 +269,137 @@ export const provinceMatchesHint = (
   return candidateProvince === normalizedHint;
 };
 
-export const detectRegionalTerritory = (provinceHint?: string) => {
-  const normalizedProvince = normalizeLocalizaText(provinceHint);
+export const detectRegionalTerritoryByName = (territoryHint?: string) => {
+  const normalizedTerritory = normalizeLocalizaText(territoryHint);
 
-  if (!normalizedProvince) {
+  if (!normalizedTerritory) {
     return null;
   }
 
+  const paddedTerritory = ` ${normalizedTerritory} `;
+
   return (
     regionalTerritoryMatchers.find((territory) =>
-      territory.aliases.some((alias) => normalizeLocalizaText(alias) === normalizedProvince)
+      territory.aliases.some((alias) => {
+        const normalizedAlias = normalizeLocalizaText(alias);
+        return (
+          normalizedAlias.length > 0 &&
+          paddedTerritory.includes(` ${normalizedAlias} `)
+        );
+      }),
     )?.adapter ?? null
   );
+};
+
+const createAbortSignalWithTimeout = (
+  inputSignal: AbortSignal | undefined,
+  timeoutMs: number,
+) => {
+  const abortController = new AbortController();
+  const abortFromInput = () => abortController.abort();
+  const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+
+  if (inputSignal) {
+    if (inputSignal.aborted) {
+      abortController.abort();
+    } else {
+      inputSignal.addEventListener("abort", abortFromInput, { once: true });
+    }
+  }
+
+  return {
+    signal: abortController.signal,
+    cleanup: () => {
+      clearTimeout(timeoutId);
+      inputSignal?.removeEventListener("abort", abortFromInput);
+    },
+  };
+};
+
+const detectRegionalTerritoryByCoordinates = async (input: {
+  approximateLat: number;
+  approximateLng: number;
+  signal?: AbortSignal;
+}) => {
+  const params = new URLSearchParams({
+    "point.lat": String(input.approximateLat),
+    "point.lon": String(input.approximateLng),
+    size: "1",
+  });
+  const { signal, cleanup } = createAbortSignalWithTimeout(
+    input.signal,
+    TERRITORY_REVERSE_GEOCODE_TIMEOUT_MS,
+  );
+
+  try {
+    const response = await fetch(
+      `${TERRITORY_REVERSE_GEOCODE_URL}?${params.toString()}`,
+      {
+        signal,
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as TerritoryReverseGeocodeResponse;
+    const feature = payload.features?.[0];
+
+    return (
+      detectRegionalTerritoryByName(feature?.properties?.region) ??
+      detectRegionalTerritoryByName(feature?.properties?.macroregion) ??
+      null
+    );
+  } catch (error) {
+    if (input.signal?.aborted) {
+      throw error;
+    }
+
+    return null;
+  } finally {
+    cleanup();
+  }
+};
+
+export const detectRegionalTerritory = async (input: {
+  provinceHint?: string;
+  approximateLat?: number;
+  approximateLng?: number;
+  signal?: AbortSignal;
+}) => {
+  const territoryByName = detectRegionalTerritoryByName(input.provinceHint);
+
+  if (territoryByName) {
+    return {
+      adapter: territoryByName,
+      source: "province_hint" as const,
+    };
+  }
+
+  if (
+    input.approximateLat === undefined ||
+    input.approximateLng === undefined
+  ) {
+    return null;
+  }
+
+  const territoryByCoordinates = await detectRegionalTerritoryByCoordinates({
+    approximateLat: input.approximateLat,
+    approximateLng: input.approximateLng,
+    signal: input.signal,
+  });
+
+  return territoryByCoordinates
+    ? {
+        adapter: territoryByCoordinates,
+        source: "coordinates" as const,
+      }
+    : null;
 };
 
 export const corpusIncludesPhrase = (corpus: string, phrase?: string) => {
@@ -260,13 +412,41 @@ export const corpusIncludesPhrase = (corpus: string, phrase?: string) => {
   return corpus.includes(normalizedPhrase);
 };
 
-export const corpusIncludesDesignator = (corpus: string, designator?: string) => {
+export const corpusIncludesDesignator = (
+  corpus: string,
+  designator?: string,
+  streetName?: string,
+) => {
   const normalizedDesignator = normalizeLocalizaText(designator);
 
   if (!corpus || !normalizedDesignator) {
     return false;
   }
 
-  const paddedCorpus = ` ${corpus} `;
-  return paddedCorpus.includes(` ${normalizedDesignator} `);
+  const streetDesignatorVariants = dedupeStrings(
+    [streetName, humanizeStreetName(streetName)].flatMap(
+      (candidateStreetName) =>
+        candidateStreetName
+          ? [
+              `${candidateStreetName} ${designator ?? ""}`,
+              `${designator ?? ""} ${candidateStreetName}`,
+            ]
+          : [],
+    ),
+  );
+
+  if (
+    streetDesignatorVariants.some((variant) =>
+      corpusIncludesPhrase(corpus, variant),
+    )
+  ) {
+    return true;
+  }
+
+  const designatorPattern = escapeRegExp(normalizedDesignator);
+  const contextualPattern = new RegExp(
+    `(?:^| )(?:${designatorContextPrefixes.join("|")}) ${designatorPattern}(?: |$)`,
+  );
+
+  return contextualPattern.test(corpus);
 };

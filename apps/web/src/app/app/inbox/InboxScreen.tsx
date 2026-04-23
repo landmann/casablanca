@@ -7,6 +7,7 @@ import {
 	CardContent,
 	CardHeader,
 	CardTitle,
+	Textarea,
 	cn,
 } from "@casedra/ui";
 import { UserButton } from "@clerk/nextjs";
@@ -108,6 +109,38 @@ const formatRelativeTime = (value: number | null | undefined) => {
 const feedbackFromError = (error: unknown) =>
 	error instanceof Error ? error.message : "Workflow action failed";
 
+const formatPercent = (value: number | null | undefined) => {
+	if (value === null || value === undefined) {
+		return "Not yet";
+	}
+
+	return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
+};
+
+const formatDuration = (value: number | null | undefined) => {
+	if (value === null || value === undefined) {
+		return "Not yet";
+	}
+
+	if (value < 60) {
+		return `${value}s`;
+	}
+
+	const hours = Math.floor(value / 3600);
+	const minutes = Math.floor((value % 3600) / 60);
+	const seconds = value % 60;
+
+	if (hours > 0) {
+		return `${hours}h ${minutes}m`;
+	}
+
+	if (seconds === 0) {
+		return `${minutes}m`;
+	}
+
+	return `${minutes}m ${seconds}s`;
+};
+
 const queueSkeletonKeys = [
 	"queue-skeleton-0",
 	"queue-skeleton-1",
@@ -180,8 +213,21 @@ export default function InboxScreen() {
 	const [feedback, setFeedback] = useState<string | null>(null);
 	const [pendingAssigneeUserId, setPendingAssigneeUserId] = useState("");
 	const [pendingState, setPendingState] = useState<ConversationState | "">("");
+	const [composerMode, setComposerMode] = useState<"reply" | "note">("reply");
+	const [composerBody, setComposerBody] = useState("");
 
 	const agencyQuery = trpc.agencies.getCurrentAgency.useQuery();
+	const createWorkspaceMutation =
+		trpc.agencies.createDefaultAgencyForUser.useMutation();
+	const inboxSummaryQuery = trpc.reporting.getInboxSummary.useQuery(undefined, {
+		enabled: agencyQuery.status === "success",
+	});
+	const responseMetricsQuery = trpc.reporting.getResponseMetrics.useQuery(
+		{ days: 7 },
+		{
+			enabled: agencyQuery.status === "success",
+		},
+	);
 	const membershipsQuery = trpc.agencies.listMemberships.useQuery(undefined, {
 		enabled: agencyQuery.status === "success",
 	});
@@ -258,8 +304,17 @@ export default function InboxScreen() {
 		setPendingState(nextStateOptions(conversationDetail)[0] ?? "");
 	}, [conversationDetail, membershipsQuery.data]);
 
+	useEffect(() => {
+		setComposerMode("reply");
+		setComposerBody("");
+	}, [selectedConversationId]);
+
 	const invalidateWorkflow = async (conversationId: string | null) => {
-		await utils.conversations.list.invalidate();
+		await Promise.all([
+			utils.conversations.list.invalidate(),
+			utils.reporting.getInboxSummary.invalidate(),
+			utils.reporting.getResponseMetrics.invalidate({ days: 7 }),
+		]);
 
 		if (conversationId) {
 			await Promise.all([
@@ -272,6 +327,8 @@ export default function InboxScreen() {
 	const takeOverMutation = trpc.conversations.takeOver.useMutation();
 	const reassignMutation = trpc.conversations.reassign.useMutation();
 	const setStateMutation = trpc.conversations.setState.useMutation();
+	const createOutboundMutation = trpc.messages.createOutbound.useMutation();
+	const createInternalNoteMutation = trpc.messages.createInternalNote.useMutation();
 
 	const handleTakeOver = async () => {
 		if (!conversationDetail) {
@@ -332,7 +389,50 @@ export default function InboxScreen() {
 		}
 	};
 
+	const handleComposerSubmit = async () => {
+		if (
+			!conversationDetail ||
+			!composerBody.trim() ||
+			(composerMode === "reply" && replyBlockedByOwnership)
+		) {
+			return;
+		}
+
+		try {
+			setFeedback(null);
+			if (composerMode === "reply") {
+				await createOutboundMutation.mutateAsync({
+					id: conversationDetail.id,
+					body: composerBody.trim(),
+				});
+				setFeedback("Reply recorded and conversation ownership updated.");
+			} else {
+				await createInternalNoteMutation.mutateAsync({
+					id: conversationDetail.id,
+					body: composerBody.trim(),
+				});
+				setFeedback("Internal note added.");
+			}
+			setComposerBody("");
+			await invalidateWorkflow(conversationDetail.id);
+		} catch (error) {
+			await invalidateWorkflow(conversationDetail.id);
+			setFeedback(feedbackFromError(error));
+		}
+	};
+
 	const totalCounts = useMemo(() => {
+		if (inboxSummaryQuery.data) {
+			return {
+				all: inboxSummaryQuery.data.totalConversations,
+				new: inboxSummaryQuery.data.countsByState.new,
+				bot_active: inboxSummaryQuery.data.countsByState.botActive,
+				awaiting_human: inboxSummaryQuery.data.countsByState.awaitingHuman,
+				human_active: inboxSummaryQuery.data.countsByState.humanActive,
+				closed: inboxSummaryQuery.data.countsByState.closed,
+			};
+		}
+
 		const allConversations = conversationsQuery.data ?? [];
 		return {
 			all: allConversations.length,
@@ -352,7 +452,7 @@ export default function InboxScreen() {
 				(conversation) => conversation.state === "closed",
 			).length,
 		};
-	}, [conversationsQuery.data]);
+	}, [conversationsQuery.data, inboxSummaryQuery.data]);
 
 	const takeoverDisabled =
 		!conversationDetail ||
@@ -361,6 +461,16 @@ export default function InboxScreen() {
 			conversationDetail.ownerUserId !== currentUserId);
 
 	const showBackButtonOnMobile = Boolean(selectedConversationId);
+	const missingMembership =
+		agencyQuery.error?.message === "No agency membership is available for this user";
+	const replyBlockedByOwnership =
+		conversationDetail?.ownerType === "human" &&
+		conversationDetail.ownerUserId !== currentUserId;
+	const composerDisabled =
+		!conversationDetail ||
+		!composerBody.trim() ||
+		(composerMode === "reply" &&
+			(conversationDetail.state === "closed" || replyBlockedByOwnership));
 
 	if (agencyQuery.isLoading) {
 		return (
@@ -384,6 +494,28 @@ export default function InboxScreen() {
 							{agencyQuery.error.message}
 						</p>
 						<div className="flex flex-wrap gap-3">
+							{missingMembership ? (
+								<Button
+									onClick={async () => {
+										try {
+											await createWorkspaceMutation.mutateAsync();
+											await agencyQuery.refetch();
+										} catch {
+											// Surface the mutation error below without interrupting the retry flow.
+										}
+									}}
+									className="rounded-full px-5"
+									disabled={createWorkspaceMutation.isPending}
+								>
+									{createWorkspaceMutation.isPending ? (
+										<LoaderCircle
+											className="mr-2 h-4 w-4 animate-spin"
+											aria-hidden="true"
+										/>
+									) : null}
+									Create workspace
+								</Button>
+							) : null}
 							<Button
 								onClick={() => agencyQuery.refetch()}
 								className="rounded-full px-5"
@@ -394,6 +526,11 @@ export default function InboxScreen() {
 								<Link href="/app/studio">Back to studio</Link>
 							</Button>
 						</div>
+						{createWorkspaceMutation.error ? (
+							<p className="text-sm leading-6 text-destructive">
+								{createWorkspaceMutation.error.message}
+							</p>
+						) : null}
 					</CardContent>
 				</Card>
 			</div>
@@ -506,6 +643,80 @@ export default function InboxScreen() {
 								</p>
 								<p className="mt-1 text-2xl font-semibold text-foreground">
 									{totalCounts.closed}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</section>
+
+				<section className="grid gap-4 lg:grid-cols-4">
+					<Card className="rounded-[26px] border-border/80 bg-background/95">
+						<CardContent className="flex items-center gap-4 p-5">
+							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+								<Clock3 className="h-5 w-5" aria-hidden="true" />
+							</div>
+							<div>
+								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+									Median first response
+								</p>
+								<p className="mt-1 text-2xl font-semibold text-foreground">
+									{formatDuration(
+										responseMetricsQuery.data?.medianFirstResponseSeconds ??
+											inboxSummaryQuery.data?.medianFirstResponseSeconds,
+									)}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+					<Card className="rounded-[26px] border-border/80 bg-background/95">
+						<CardContent className="flex items-center gap-4 p-5">
+							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+								<ShieldCheck className="h-5 w-5" aria-hidden="true" />
+							</div>
+							<div>
+								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+									Response coverage
+								</p>
+								<p className="mt-1 text-2xl font-semibold text-foreground">
+									{formatPercent(
+										responseMetricsQuery.data?.responseCoveragePct ??
+											inboxSummaryQuery.data?.responseCoveragePct,
+									)}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+					<Card className="rounded-[26px] border-border/80 bg-background/95">
+						<CardContent className="flex items-center gap-4 p-5">
+							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+								<ArrowRightLeft className="h-5 w-5" aria-hidden="true" />
+							</div>
+							<div>
+								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+									Handoff rate
+								</p>
+								<p className="mt-1 text-2xl font-semibold text-foreground">
+									{formatPercent(
+										responseMetricsQuery.data?.handoffRatePct ??
+											inboxSummaryQuery.data?.handoffRatePct,
+									)}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+					<Card className="rounded-[26px] border-border/80 bg-background/95">
+						<CardContent className="flex items-center gap-4 p-5">
+							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+								<RefreshCcw className="h-5 w-5" aria-hidden="true" />
+							</div>
+							<div>
+								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+									Reopened after close
+								</p>
+								<p className="mt-1 text-2xl font-semibold text-foreground">
+									{formatPercent(
+										inboxSummaryQuery.data?.reopenedConversationRatePct,
+									)}
 								</p>
 							</div>
 						</CardContent>
@@ -973,6 +1184,90 @@ export default function InboxScreen() {
 													</Button>
 												</div>
 											</div>
+										</div>
+									</CardContent>
+								</Card>
+
+								<Card className="rounded-[30px] border-border/80 bg-background/95 shadow-[0_24px_70px_rgba(31,26,20,0.06)]">
+									<CardHeader className="space-y-4">
+										<div className="flex flex-wrap items-center justify-between gap-3">
+											<CardTitle className="font-serif text-[2rem] font-normal leading-tight">
+												Write
+											</CardTitle>
+											<div className="flex flex-wrap gap-2">
+												<button
+													type="button"
+													onClick={() => setComposerMode("reply")}
+													className={cn(
+														"rounded-full border px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+														composerMode === "reply"
+															? "border-primary bg-primary text-primary-foreground"
+															: "border-border bg-background text-muted-foreground hover:text-foreground",
+													)}
+												>
+													Reply
+												</button>
+												<button
+													type="button"
+													onClick={() => setComposerMode("note")}
+													className={cn(
+														"rounded-full border px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+														composerMode === "note"
+															? "border-primary bg-primary text-primary-foreground"
+															: "border-border bg-background text-muted-foreground hover:text-foreground",
+													)}
+												>
+													Internal note
+												</button>
+											</div>
+										</div>
+										<p className="text-sm leading-6 text-muted-foreground">
+											{composerMode === "reply"
+												? "A human reply records first response timing when needed and claims ownership of the thread."
+												: "Internal notes stay in the transcript without counting as a customer response."}
+										</p>
+									</CardHeader>
+									<CardContent className="space-y-4">
+										<Textarea
+											value={composerBody}
+											onChange={(event) => setComposerBody(event.target.value)}
+											placeholder={
+												composerMode === "reply"
+													? "Write the reply you want this lead to receive."
+													: "Add context for the next teammate."
+											}
+											className="min-h-[140px] rounded-[24px] border-border/80 px-4 py-4"
+										/>
+										<div className="flex flex-wrap items-center justify-between gap-3">
+											<p className="text-sm text-muted-foreground">
+												{replyBlockedByOwnership &&
+												composerMode === "reply"
+													? "Replies are blocked until the current owner hands this thread off or a manager reassigns it."
+													: conversationDetail.state === "closed" &&
+															composerMode === "reply"
+													? "Closed conversations need to be reopened by new inbound activity before replying."
+													: composerMode === "reply"
+														? "Replying from here marks the thread as human active."
+														: "Notes are visible to your agency only."}
+											</p>
+											<Button
+												className="rounded-full px-5"
+												onClick={handleComposerSubmit}
+												disabled={
+													composerDisabled ||
+													createOutboundMutation.isPending ||
+													createInternalNoteMutation.isPending
+												}
+											>
+												{createOutboundMutation.isPending ||
+												createInternalNoteMutation.isPending ? (
+													<LoaderCircle
+														className="mr-2 h-4 w-4 animate-spin"
+														aria-hidden="true"
+													/>
+												) : null}
+												{composerMode === "reply" ? "Send reply" : "Save note"}
+											</Button>
 										</div>
 									</CardContent>
 								</Card>

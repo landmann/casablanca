@@ -575,11 +575,11 @@ Suggested initial routers:
 - `takeOver`
 - `reassign`
 - `setState`
-- `appendSystemEvent`
 
 ### `messages`
 
 - `listByConversation`
+- `createOutbound`
 - `createInternalNote`
 
 ### `reporting`
@@ -718,11 +718,25 @@ Implemented in the current slice:
 - Phase 4 is in place: `/app/inbox` now renders real workflow records, transcript history, ownership, and queue actions instead of preview arrays.
 - Workflow authorization is now enforced inside Convex using Clerk-backed identity and active agency membership, and the server-side Convex client is request-scoped and authenticated.
 
+Now covered in this reviewed slice:
+
+- Phase 5 reporting now exists as a first manager-facing inbox surface with queue counts, response coverage, first-response timing, handoff rate, and reopen rate derived from workflow records.
+- Phase 6 forwarded portal email ingestion is now in place through a guarded `/api/workflow/portal-email` route with dedupe, idempotent ingest handling, reopen-on-new-message behavior, and fallback thread reuse when upstream lead ids are absent.
+- Human outbound replies are now recorded from `/app/inbox`, claim ownership when appropriate, and update first-response timing from the same workflow records.
+- Manual smoke verification of the authenticated `/app/inbox` flow and the portal-email ingest path has been completed in local development.
+
+Remaining gaps against the full plan:
+
+- rollout controls are still missing: there is no workflow-specific feature flag or per-agency rollout gate yet, and the existing env flags are unrelated to workflow rollout
+- observability remains partial: the workflow events listed in this document are still not instrumented end-to-end, and PostHog capture is currently only used in onboarding flows
+- verification remains incomplete: manual checks are done, but the recommended automated coverage for idempotent ingestion, ownership concurrency, and inbox UI smoke paths is still absent
+- repo-wide verification is not fully clean yet: the standalone `packages/api` `tsc --noEmit` path still has pre-existing Node/lib configuration debt outside this CRM slice
+- onboarding still has not been expanded to capture team member mapping, channel setup, or routing preferences
+- API parity is close but not exact: `messages.createOutbound` is live, while `appendSystemEvent` is still handled through internal workflow writes rather than a public TRPC procedure
+
 Still open after this reviewed slice:
 
-- Phase 5 reporting is only partially represented through stored first-response and queue-state fields; the manager-facing reporting surface is not built yet.
-- Phase 6 forwarded portal email ingestion is still pending, including dedupe and idempotent ingest handling.
-- Manual browser verification of the authenticated `/app/inbox` flow is still recommended before beta use.
+- the remaining rollout, observability, and verification work above should be closed before wider beta rollout
 
 ## Key Risks
 

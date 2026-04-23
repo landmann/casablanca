@@ -20,6 +20,10 @@ import {
 	normalizeLocalizaText,
 	provinceMatchesHint,
 } from "./score";
+import { resolveAlavaCatastro } from "./catastro-alava";
+import { resolveBizkaiaCatastro } from "./catastro-bizkaia";
+import { resolveGipuzkoaCatastro } from "./catastro-gipuzkoa";
+import { resolveNavarraCatastro } from "./catastro-navarra";
 import type { LocalizaOfficialResolution } from "./types";
 
 const CATASTRO_WFS_URL = "https://ovc.catastro.meh.es/INSPIRE/wfsAD.aspx";
@@ -439,7 +443,11 @@ const scoreCandidate = (input: {
 		score += 0.1;
 		matchedSignals.push("portal_hint_match");
 	} else if (
-		corpusIncludesDesignator(listingSignalCorpus, candidate.designator)
+		corpusIncludesDesignator(
+			listingSignalCorpus,
+			candidate.designator,
+			candidate.streetName,
+		)
 	) {
 		score += 0.1;
 		matchedSignals.push("designator_match");
@@ -540,20 +548,60 @@ export const resolveStateCatastro = async (input: {
 	signals: IdealistaSignals;
 	signal?: AbortSignal;
 }): Promise<LocalizaOfficialResolution> => {
-	const regionalTerritory = detectRegionalTerritory(input.signals.province);
+	const regionalTerritory = await detectRegionalTerritory({
+		provinceHint: input.signals.province,
+		approximateLat: input.signals.approximateLat,
+		approximateLng: input.signals.approximateLng,
+		signal: input.signal,
+	});
 
 	if (regionalTerritory) {
-		return buildUnresolvedOfficialResolution({
-			territoryAdapter: regionalTerritory,
-			reasonCodes: [
+		const regionalResolution = await (() => {
+			switch (regionalTerritory.adapter) {
+				case "navarra_rtn":
+					return resolveNavarraCatastro(input);
+				case "alava_catastro":
+					return resolveAlavaCatastro(input);
+				case "bizkaia_catastro":
+					return resolveBizkaiaCatastro(input);
+				case "gipuzkoa_catastro":
+					return resolveGipuzkoaCatastro(input);
+				default:
+					return Promise.resolve(
+						buildUnresolvedOfficialResolution({
+							territoryAdapter: regionalTerritory.adapter,
+							reasonCodes: [
+								"regional_cadastre_required",
+								`${regionalTerritory.adapter}_unsupported`,
+							],
+							matchedSignals: ["territory_routed"],
+							discardedSignals: ["state_catastro"],
+							officialSource:
+								REGIONAL_OFFICIAL_SOURCES[regionalTerritory.adapter] ??
+								OFFICIAL_SOURCE_LABEL,
+						}),
+					);
+			}
+		})();
+
+		return {
+			...regionalResolution,
+			reasonCodes: dedupeStrings([
 				"regional_cadastre_required",
-				`${regionalTerritory}_pending`,
-			],
-			matchedSignals: ["territory_routed"],
-			discardedSignals: ["state_catastro"],
-			officialSource:
-				REGIONAL_OFFICIAL_SOURCES[regionalTerritory] ?? OFFICIAL_SOURCE_LABEL,
-		});
+				...regionalResolution.reasonCodes,
+			]),
+			matchedSignals: dedupeStrings([
+				"territory_routed",
+				regionalTerritory.source === "coordinates"
+					? "territory_routed_by_coordinates"
+					: "territory_routed_by_province_hint",
+				...regionalResolution.matchedSignals,
+			]),
+			discardedSignals: dedupeStrings([
+				"state_catastro",
+				...regionalResolution.discardedSignals,
+			]),
+		};
 	}
 
 	if (
@@ -575,28 +623,19 @@ export const resolveStateCatastro = async (input: {
 	const radii = buildSearchRadii(input.signals.mapPrecisionMeters);
 	const allCandidates: ParsedCatastroAddress[] = [];
 
-	try {
-		for (const radius of radii) {
-			const nextCandidates = await fetchCandidatesForRadius({
-				centerX: centerPoint.x,
-				centerY: centerPoint.y,
-				radiusMeters: radius,
-				signal: input.signal,
-			});
-
-			allCandidates.push(...nextCandidates);
-
-			if (dedupeByCandidateId(allCandidates).length >= 6) {
-				break;
-			}
-		}
-	} catch {
-		return buildUnresolvedOfficialResolution({
-			territoryAdapter: "state_catastro",
-			reasonCodes: ["state_catastro_request_failed"],
-			matchedSignals: ["official_source_reached"],
-			discardedSignals: ["official_candidates"],
+	for (const radius of radii) {
+		const nextCandidates = await fetchCandidatesForRadius({
+			centerX: centerPoint.x,
+			centerY: centerPoint.y,
+			radiusMeters: radius,
+			signal: input.signal,
 		});
+
+		allCandidates.push(...nextCandidates);
+
+		if (dedupeByCandidateId(allCandidates).length >= 6) {
+			break;
+		}
 	}
 
 	const dedupedCandidates = dedupeByCandidateId(allCandidates);

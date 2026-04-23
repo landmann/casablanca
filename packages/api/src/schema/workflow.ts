@@ -74,3 +74,49 @@ export const createInternalNoteInputSchema = conversationIdSchema.extend({
 	body: z.string().min(1, "A note body is required"),
 	bodyFormat: messageBodyFormatSchema.optional(),
 });
+
+export const createOutboundMessageInputSchema = conversationIdSchema.extend({
+	body: z.string().min(1, "A reply body is required"),
+	bodyFormat: messageBodyFormatSchema.optional(),
+});
+
+export const responseMetricsInputSchema = z.object({
+	days: z.number().int().min(1).max(90).default(7),
+});
+
+export const portalEmailIngressSchema = z.object({
+	agencySlug: z.string().min(1, "Agency slug is required"),
+	channel: z
+		.object({
+			externalChannelId: z.string().min(1).optional(),
+			label: z.string().min(1).optional(),
+			provider: z.string().min(1).optional(),
+		})
+		.default({}),
+	contact: z.object({
+		kind: contactKindSchema.default("buyer"),
+		fullName: z.string().min(1).optional(),
+		email: z.string().email().optional(),
+		phone: z.string().optional(),
+		preferredLanguage: z.string().optional(),
+		notes: z.string().optional(),
+	}),
+	lead: z.object({
+		kind: leadKindSchema.default("buyer_inquiry"),
+		externalLeadId: z.string().min(1).optional(),
+		listingId: z.string().min(1).optional(),
+		sourceLabel: z.string().min(1).optional(),
+		rawPayload: z.any().optional(),
+	}),
+	message: z.object({
+		body: z.string().min(1, "A message body is required"),
+		sentAt: z.number().int().optional(),
+		dedupeKey: z.string().min(1).optional(),
+		providerMessageId: z.string().min(1).optional(),
+		externalEventId: z.string().min(1).optional(),
+		subject: z.string().optional(),
+		metadata: z.record(z.string(), z.any()).optional(),
+	}),
+	summary: z.string().optional(),
+	nextRecommendedStep: z.string().optional(),
+});

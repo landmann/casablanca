@@ -1,11 +1,6 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-const booleanFlagSchema = z
-  .enum(["true", "false"])
-  .default("false")
-  .transform((value) => value === "true");
-
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -19,9 +14,9 @@ export const env = createEnv({
     IDEALISTA_API_SECRET: z.string().optional(),
     BROWSERBASE_API_KEY: z.string().optional(),
     BROWSERBASE_PROJECT_ID: z.string().optional(),
-    LOCALIZA_ENABLED: booleanFlagSchema,
     STRIPE_SECRET_KEY: z.string().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    WORKFLOW_INGEST_SECRET: z.string().optional(),
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.string().optional(),
   },
@@ -30,7 +25,6 @@ export const env = createEnv({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
     NEXT_PUBLIC_CONVEX_URL: z.string().url(),
     NEXT_PUBLIC_CONVEX_SITE_URL: z.string().url(),
-    NEXT_PUBLIC_LOCALIZA_ENABLED: booleanFlagSchema,
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
@@ -49,14 +43,13 @@ export const env = createEnv({
     IDEALISTA_API_SECRET: process.env.IDEALISTA_API_SECRET,
     BROWSERBASE_API_KEY: process.env.BROWSERBASE_API_KEY,
     BROWSERBASE_PROJECT_ID: process.env.BROWSERBASE_PROJECT_ID,
-    LOCALIZA_ENABLED: process.env.LOCALIZA_ENABLED,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    WORKFLOW_INGEST_SECRET: process.env.WORKFLOW_INGEST_SECRET,
     POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
     POSTHOG_HOST: process.env.POSTHOG_HOST,
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     NEXT_PUBLIC_CONVEX_SITE_URL: process.env.NEXT_PUBLIC_CONVEX_SITE_URL,
-    NEXT_PUBLIC_LOCALIZA_ENABLED: process.env.NEXT_PUBLIC_LOCALIZA_ENABLED,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:

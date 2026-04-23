@@ -1,7 +1,11 @@
 import { SignIn } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, Building2, ShieldCheck, Sparkles, Workflow } from "lucide-react";
+
+import { isAllowedAppUser } from "@/lib/app-access";
 
 export const metadata: Metadata = {
 	title: "Sign In | Casedra",
@@ -36,7 +40,13 @@ const accessSignals = [
 	"Seller-side proof",
 ] as const;
 
-export default function SignInPage() {
+export default async function SignInPage() {
+	const user = await currentUser();
+
+	if (user) {
+		redirect(isAllowedAppUser(user) ? "/app" : "/access-restricted");
+	}
+
 	return (
 		<main className="min-h-screen bg-background text-foreground">
 			<div className="relative isolate overflow-hidden">
@@ -79,6 +89,10 @@ export default function SignInPage() {
 								Casedra gives your office one place to review first response, routing,
 								coverage, and the proof that seller-side conversations are not slipping
 								between channels.
+							</p>
+							<p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">
+								Workspace access is currently limited to approved accounts during the
+								private rollout.
 							</p>
 
 							<div className="mt-8 flex flex-wrap gap-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:gap-3 sm:text-xs sm:tracking-[0.2em]">
@@ -123,8 +137,8 @@ export default function SignInPage() {
 									path="/sign-in"
 									routing="path"
 									withSignUp
-									fallbackRedirectUrl="/app/studio"
-									signUpFallbackRedirectUrl="/app/studio"
+									fallbackRedirectUrl="/app"
+									signUpFallbackRedirectUrl="/app"
 								/>
 							</div>
 						</div>

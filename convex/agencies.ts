@@ -580,12 +580,6 @@ export const listMemberships = query({
 export const createDefaultAgencyForUser = mutation({
 	args: {},
 	handler: async (ctx) => {
-		if (process.env.NODE_ENV === "production") {
-			throw new Error(
-				"FORBIDDEN:Default agency bootstrap is disabled in production",
-			);
-		}
-
 		const userId = await requireAuthenticatedUserId(ctx);
 		const existing = await loadCurrentAgencyForUser(ctx, userId);
 		if (existing) {
@@ -605,7 +599,29 @@ export const createDefaultAgencyForUser = mutation({
 			updatedAt: now,
 		});
 
-		await seedDefaultWorkspace(ctx, agencyId, userId);
+		if (process.env.NODE_ENV === "production") {
+			await ctx.db.insert("agencyMemberships", {
+				agencyId,
+				userId,
+				role: "owner",
+				status: "active",
+				displayName: "Workspace owner",
+				createdAt: now,
+				updatedAt: now,
+			});
+
+			await ctx.db.insert("channels", {
+				agencyId,
+				type: "manual",
+				label: "Manual intake",
+				status: "active",
+				provider: "internal",
+				createdAt: now,
+				updatedAt: now,
+			});
+		} else {
+			await seedDefaultWorkspace(ctx, agencyId, userId);
+		}
 
 		const created = await loadCurrentAgencyForUser(ctx, userId);
 		if (!created) {

@@ -56,6 +56,16 @@ export const listingLocationResolutionSchema = z.object({
 	status: locationResolutionStatusSchema,
 	confidenceScore: z.number().min(0).max(1),
 	officialSource: z.string().min(1, "Official source is required"),
+	officialSourceUrl: z.string().url().optional(),
+	territoryAdapter: z
+		.enum([
+			"state_catastro",
+			"navarra_rtn",
+			"alava_catastro",
+			"bizkaia_catastro",
+			"gipuzkoa_catastro",
+		])
+		.optional(),
 	requestedStrategy: z
 		.enum(["auto", "idealista_api", "firecrawl", "browser_worker"])
 		.optional(),

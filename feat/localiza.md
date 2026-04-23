@@ -550,7 +550,11 @@ Response shape:
 
 ```ts
 type ResolveIdealistaLocationResult = {
-  status: "exact_match" | "building_match" | "needs_confirmation" | "unresolved";
+  status:
+    | "exact_match"
+    | "building_match"
+    | "needs_confirmation"
+    | "unresolved";
   requestedStrategy: "auto" | "idealista_api" | "firecrawl" | "browser_worker";
   confidenceScore: number;
   prefillLocation?: {
@@ -728,13 +732,13 @@ This is the working engineering checklist for Localiza. It is intentionally more
 
 ### Phase 5. Cadastral adapters and resolution logic
 
-- [ ] Implement territory routing: national Catastro vs Navarra vs Álava/Bizkaia/Gipuzkoa.
-  Current state: the national Catastro path is wired, and Navarra / Álava / Bizkaia / Gipuzkoa currently short-circuit to explicit unresolved regional placeholders. Robust regional routing still needs coordinate-safe detection plus the regional adapters themselves.
+- [x] Implement territory routing: national Catastro vs Navarra vs Álava/Bizkaia/Gipuzkoa.
+  Current state: routing now uses province hints plus coordinate-safe reverse-geocode fallback, and dispatches into the national Catastro, Navarra RTN, or the Álava / Bizkaia / Gipuzkoa official cadastres as appropriate.
 - [x] Implement the national Catastro adapter first.
-- [ ] Implement Navarra official candidate resolution.
-- [ ] Implement Álava official candidate resolution.
-- [ ] Implement Bizkaia official candidate resolution.
-- [ ] Implement Gipuzkoa official candidate resolution.
+- [x] Implement Navarra official candidate resolution.
+- [x] Implement Álava official candidate resolution.
+- [x] Implement Bizkaia official candidate resolution.
+- [x] Implement Gipuzkoa official candidate resolution.
 - [x] Implement candidate scoring and threshold logic.
 - [x] Implement exact, building, candidate, and unresolved decision assignment.
 - [x] Implement machine-readable evidence generation with stable `reasonCodes`.
@@ -742,11 +746,11 @@ This is the working engineering checklist for Localiza. It is intentionally more
 
 ### Phase 5A. Review follow-ups from the first state Catastro slice
 
-- [ ] Tighten `exact_match` designator proof in `apps/web/src/server/localiza/score.ts` and `apps/web/src/server/localiza/catastro-state.ts`.
+- [x] Tighten `exact_match` designator proof in `apps/web/src/server/localiza/score.ts` and `apps/web/src/server/localiza/catastro-state.ts`.
   Current risk: `corpusIncludesDesignator()` can treat unrelated standalone numeric tokens in the listing text as unit or portal proof. Example: `3 habitaciones` can satisfy candidate designator `3`, which can incorrectly help promote a result to `exact_match`.
-- [ ] Split acquisition-adapter failures from cadastral matching failures in `apps/web/src/server/localiza/resolver.ts`.
+- [x] Split acquisition-adapter failures from cadastral matching failures in `apps/web/src/server/localiza/resolver.ts`.
   Current risk: the resolver wraps signal acquisition and official Catastro matching in the same `try` block, so a `state_catastro` timeout or error is currently recorded as `${strategy}_failed`. In `auto` mode this can also trigger unnecessary retries through other acquisition adapters instead of surfacing a cadastre failure cleanly.
-- [ ] Make regional routing coordinate-safe instead of province-string-only in `apps/web/src/server/localiza/score.ts` and `apps/web/src/server/localiza/catastro-state.ts`.
+- [x] Make regional routing coordinate-safe instead of province-string-only in `apps/web/src/server/localiza/score.ts` and `apps/web/src/server/localiza/catastro-state.ts`.
   Current risk: Navarra / Álava / Bizkaia / Gipuzkoa routing currently depends on `signals.province`. If the listing has usable coordinates but no province hint, we can still hit the national Catastro path even though those territories require regional cadastres.
 
 ### Phase 6. Cache, leases, and concurrency safety
@@ -763,7 +767,8 @@ This is the working engineering checklist for Localiza. It is intentionally more
 ### Phase 7. Observability and analytics
 
 - [ ] Add structured server logs for start, adapter failure, cadastre failure, completion, confirm, and manual override.
-- [ ] Add PostHog events for URL paste, resolve click, success, unresolved, candidate select, manual override, and listing created.
+- [x] Expose routed territory and exact official service URL in user-facing resolver output for auditability.
+- [x] Add PostHog events for URL paste, resolve click, success, unresolved, candidate select, manual override, and listing created.
 - [ ] Add metrics for success rate by acquisition adapter and territory adapter.
 - [ ] Add unresolved-rate and timeout-rate monitoring thresholds.
 - [ ] Add a severity-1 incident procedure for any confirmed false-positive autofill.
@@ -803,7 +808,7 @@ This is the concrete build order we will execute and later check against:
 8. Validate Firecrawl against the golden dataset.
 9. Validate the explicit retry strategies against the same links so users can recover from adapter-specific failure.
 10. Only stand up the Browserbase-backed minimal-signal worker if the official API and Firecrawl paths are insufficient on the dataset.
-10. Finish observability, fixtures, regression tests, and feature-flagged rollout.
+11. Finish observability, fixtures, regression tests, and feature-flagged rollout.
 
 Execution notes:
 
