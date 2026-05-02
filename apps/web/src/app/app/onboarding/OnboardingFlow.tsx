@@ -42,13 +42,13 @@ import {
 	getPreferredLocalizaStrategy,
 } from "@/lib/localiza-strategies";
 import { trpc } from "@/trpc/shared";
+import { LocalizaPropertyReport } from "../localiza/LocalizaPropertyReport";
 import {
 	buildClearedLocationDraft,
 	canAddListingDraft,
 	clearLocationAfterFailedResolve,
 	hasLocalizaLinkedDraftState,
 } from "./localiza-draft-state";
-import { LocalizaPropertyReport } from "../localiza/LocalizaPropertyReport";
 
 const stepOrder = ["brand", "listings", "review"] as const;
 export type OnboardingStepKey = (typeof stepOrder)[number];
@@ -105,6 +105,8 @@ type SavedListingSummary = ListingCreateInput & {
 	id: string;
 };
 
+type LocalizaCandidate = ResolveIdealistaLocationResult["candidates"][number];
+
 const createListingDraft = (initialSourceUrl = ""): ListingDraft => ({
 	title: "",
 	sourceType: "idealista",
@@ -136,10 +138,8 @@ const generationTemplates: { kind: MediaGenerationKind; label: string }[] = [
 ];
 
 const brandTips: Record<BrandSourceType, string> = {
-	firecrawl:
-		"Pega tu web. Casedra leerá lo básico: nombre, color y tono.",
-	manual:
-		"Escribe lo esencial para que Casedra use la marca correcta.",
+	firecrawl: "Pega tu web. Casedra leerá lo básico: nombre, color y tono.",
+	manual: "Escribe lo esencial para que Casedra use la marca correcta.",
 };
 
 const listingSourceOptions: Array<{
@@ -147,21 +147,21 @@ const listingSourceOptions: Array<{
 	label: string;
 	icon: typeof Globe2;
 }> = [
-		{
-			value: "idealista",
-			label: "Pegar Idealista",
-			icon: Globe2,
-		},
-		{
-			value: "firecrawl",
-			label: "Pegar otro enlace",
-			icon: Globe2,
-		},
-		{
-			value: "manual",
-			label: "Escribir a mano",
-			icon: Sparkles,
-		},
+	{
+		value: "idealista",
+		label: "Pegar Idealista",
+		icon: Globe2,
+	},
+	{
+		value: "firecrawl",
+		label: "Pegar otro enlace",
+		icon: Globe2,
+	},
+	{
+		value: "manual",
+		label: "Escribir a mano",
+		icon: Sparkles,
+	},
 ];
 
 const listingSourceCopy: Record<
@@ -271,14 +271,14 @@ function computePlannedGenerations(
 				? listingSlug
 				: `listing-${listingIndex + 1}`;
 
-			return generationTemplates.map((template) => ({
-				kind: template.kind,
-				label: template.label,
-				listingId,
-				listingTitle: listing.title,
-				mediaKey: `${listingId}-${template.kind}`,
-			}));
-		});
+		return generationTemplates.map((template) => ({
+			kind: template.kind,
+			label: template.label,
+			listingId,
+			listingTitle: listing.title,
+			mediaKey: `${listingId}-${template.kind}`,
+		}));
+	});
 }
 
 const buildLocationResolutionFromResult = (
@@ -383,12 +383,14 @@ interface OnboardingFlowProps {
 	initialStep: OnboardingStepKey;
 	availableLocalizaStrategies: AvailableLocalizaStrategy[];
 	initialSourceUrl?: string;
+	initialLocalizaCandidateId?: string;
 }
 
 export default function OnboardingFlow({
 	initialStep,
 	availableLocalizaStrategies,
 	initialSourceUrl = "",
+	initialLocalizaCandidateId = "",
 }: OnboardingFlowProps) {
 	const router = useRouter();
 	const normalizedStep = stepOrder.includes(initialStep)
@@ -417,6 +419,12 @@ export default function OnboardingFlow({
 	>(null);
 	const hasTrackedLocalizaUrlPasteRef = useRef(false);
 	const hasTrackedManualOverrideRef = useRef(false);
+	const initialLocalizaCandidateIdRef = useRef(
+		initialLocalizaCandidateId.trim() || null,
+	);
+	const shouldAutoResolveInitialSourceRef = useRef(
+		Boolean(initialSourceUrl.trim()),
+	);
 	const localizaRequestSequenceRef = useRef(0);
 	const activeLocalizaRequestRef = useRef<number | null>(null);
 	const onboardingFieldId = useId();
@@ -539,6 +547,8 @@ export default function OnboardingFlow({
 			return;
 		}
 
+		initialLocalizaCandidateIdRef.current = null;
+		shouldAutoResolveInitialSourceRef.current = false;
 		hasTrackedLocalizaUrlPasteRef.current = false;
 		hasTrackedManualOverrideRef.current = false;
 		clearActiveLocalizaRequest();
@@ -570,6 +580,8 @@ export default function OnboardingFlow({
 	};
 
 	const handleListingSourceUrlChange = (value: string) => {
+		initialLocalizaCandidateIdRef.current = null;
+		shouldAutoResolveInitialSourceRef.current = false;
 		const trimmedValue = value.trim();
 
 		if (listingDraft.sourceType === "idealista") {
@@ -711,7 +723,14 @@ export default function OnboardingFlow({
 			clearActiveLocalizaRequest();
 			setLocalizaError(null);
 			setLocalizaResult(result);
-			setSelectedLocalizaCandidateId(null);
+			setSelectedLocalizaCandidateId(
+				result.status === "needs_confirmation"
+					? (result.candidates.find(
+							(candidate) =>
+								candidate.id === initialLocalizaCandidateIdRef.current,
+						)?.id ?? null)
+					: null,
+			);
 			setListingDraft((prev) => ({
 				...prev,
 				sourceUrl: result.sourceMetadata.sourceUrl,
@@ -827,6 +846,86 @@ export default function OnboardingFlow({
 		);
 	};
 
+	const applyLocalizaCandidate = (
+		localizaResultToApply: ResolveIdealistaLocationResult,
+		selectedCandidate: LocalizaCandidate,
+	) => {
+		if (!selectedCandidate.prefillLocation) {
+			return false;
+		}
+
+		const candidatePrefillLocation = selectedCandidate.prefillLocation;
+		hasTrackedManualOverrideRef.current = false;
+		capturePosthogEvent("localiza_candidate_confirmed", {
+			...buildLocalizaAnalyticsPayload(localizaResultToApply),
+			selectedCandidateId: selectedCandidate.id,
+			selectedCandidateLabel: selectedCandidate.label,
+			selectedCandidateScore: selectedCandidate.score,
+			selectedCandidateParcelRef14: selectedCandidate.parcelRef14,
+			selectedCandidateHasPrefillLocation: Boolean(
+				selectedCandidate.prefillLocation,
+			),
+		});
+		setListingDraft((prev) => ({
+			...prev,
+			sourceMetadata: localizaResultToApply.sourceMetadata,
+			propertyDossier: buildDossierWithOfficialLocation(
+				localizaResultToApply.propertyDossier,
+				{
+					location: candidatePrefillLocation,
+					proposedAddressLabel: selectedCandidate.label,
+					parcelRef14: selectedCandidate.parcelRef14,
+					unitRef20: selectedCandidate.unitRef20,
+				},
+			),
+			location: candidatePrefillLocation,
+			locationResolution: buildLocationResolutionFromResult(
+				localizaResultToApply,
+				{
+					status: "building_match",
+					confidenceScore: selectedCandidate.score,
+					parcelRef14: selectedCandidate.parcelRef14,
+					unitRef20: selectedCandidate.unitRef20,
+					resolvedAddressLabel: selectedCandidate.label,
+					extraReasonCodes: ["user_confirmed_candidate"],
+				},
+			),
+		}));
+		setLocalizaResult((prev) => {
+			const resultToUpdate = prev ?? localizaResultToApply;
+
+			return {
+				...resultToUpdate,
+				status: "building_match",
+				confidenceScore: selectedCandidate.score,
+				resolvedAddressLabel: selectedCandidate.label,
+				parcelRef14: selectedCandidate.parcelRef14,
+				unitRef20: selectedCandidate.unitRef20,
+				prefillLocation: selectedCandidate.prefillLocation,
+				propertyDossier: buildDossierWithOfficialLocation(
+					resultToUpdate.propertyDossier,
+					{
+						location: selectedCandidate.prefillLocation,
+						proposedAddressLabel: selectedCandidate.label,
+						parcelRef14: selectedCandidate.parcelRef14,
+						unitRef20: selectedCandidate.unitRef20,
+					},
+				),
+				evidence: {
+					...resultToUpdate.evidence,
+					reasonCodes: Array.from(
+						new Set([
+							...resultToUpdate.evidence.reasonCodes,
+							"user_confirmed_candidate",
+						]),
+					),
+				},
+			};
+		});
+
+		return true;
+	};
+
 	const handleApplySelectedCandidate = () => {
 		if (!localizaResult || localizaResult.status !== "needs_confirmation") {
 			return;
@@ -840,71 +939,7 @@ export default function OnboardingFlow({
 			return;
 		}
 
-		const candidatePrefillLocation = selectedCandidate.prefillLocation;
-		hasTrackedManualOverrideRef.current = false;
-		capturePosthogEvent("localiza_candidate_confirmed", {
-			...buildLocalizaAnalyticsPayload(localizaResult),
-			selectedCandidateId: selectedCandidate.id,
-			selectedCandidateLabel: selectedCandidate.label,
-			selectedCandidateScore: selectedCandidate.score,
-			selectedCandidateParcelRef14: selectedCandidate.parcelRef14,
-			selectedCandidateHasPrefillLocation: Boolean(
-				selectedCandidate.prefillLocation,
-			),
-		});
-		setListingDraft((prev) => ({
-			...prev,
-			sourceMetadata: localizaResult.sourceMetadata,
-			propertyDossier: buildDossierWithOfficialLocation(
-				localizaResult.propertyDossier,
-				{
-					location: candidatePrefillLocation,
-					proposedAddressLabel: selectedCandidate.label,
-					parcelRef14: selectedCandidate.parcelRef14,
-					unitRef20: selectedCandidate.unitRef20,
-				},
-			),
-			location: candidatePrefillLocation,
-			locationResolution: buildLocationResolutionFromResult(localizaResult, {
-				status: "building_match",
-				confidenceScore: selectedCandidate.score,
-				parcelRef14: selectedCandidate.parcelRef14,
-				unitRef20: selectedCandidate.unitRef20,
-				resolvedAddressLabel: selectedCandidate.label,
-				extraReasonCodes: ["user_confirmed_candidate"],
-			}),
-		}));
-		setLocalizaResult((prev) =>
-			prev
-				? {
-						...prev,
-						status: "building_match",
-						confidenceScore: selectedCandidate.score,
-						resolvedAddressLabel: selectedCandidate.label,
-						parcelRef14: selectedCandidate.parcelRef14,
-						unitRef20: selectedCandidate.unitRef20,
-						prefillLocation: selectedCandidate.prefillLocation,
-						propertyDossier: buildDossierWithOfficialLocation(
-							prev.propertyDossier,
-							{
-								location: selectedCandidate.prefillLocation,
-								proposedAddressLabel: selectedCandidate.label,
-								parcelRef14: selectedCandidate.parcelRef14,
-								unitRef20: selectedCandidate.unitRef20,
-							},
-						),
-						evidence: {
-							...prev.evidence,
-							reasonCodes: Array.from(
-								new Set([
-									...prev.evidence.reasonCodes,
-									"user_confirmed_candidate",
-								]),
-							),
-						},
-					}
-				: prev,
-		);
+		void applyLocalizaCandidate(localizaResult, selectedCandidate);
 	};
 
 	const handleSelectLocalizaCandidate = (candidateId: string) => {
@@ -932,6 +967,58 @@ export default function OnboardingFlow({
 			selectedCandidateOfficialUrl: candidate.officialUrl,
 		});
 	};
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: One-shot URL handoff is guarded by refs so it cannot re-run on callback identity changes.
+	useEffect(() => {
+		if (
+			!shouldAutoResolveInitialSourceRef.current ||
+			currentStep !== "listings" ||
+			!hasConfiguredLocalizaStrategy ||
+			isLocalizaResolving ||
+			localizaResult ||
+			!listingDraft.sourceUrl.trim()
+		) {
+			return;
+		}
+
+		shouldAutoResolveInitialSourceRef.current = false;
+		void handleResolveIdealistaLocation();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		currentStep,
+		hasConfiguredLocalizaStrategy,
+		isLocalizaResolving,
+		listingDraft.sourceUrl,
+		localizaResult,
+	]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: The candidate id is consumed exactly once and then cleared.
+	useEffect(() => {
+		const initialCandidateId = initialLocalizaCandidateIdRef.current;
+
+		if (
+			!initialCandidateId ||
+			!localizaResult ||
+			localizaResult.status !== "needs_confirmation"
+		) {
+			return;
+		}
+
+		const selectedCandidate = localizaResult.candidates.find(
+			(candidate) => candidate.id === initialCandidateId,
+		);
+
+		if (!selectedCandidate) {
+			initialLocalizaCandidateIdRef.current = null;
+			return;
+		}
+
+		setSelectedLocalizaCandidateId(selectedCandidate.id);
+
+		applyLocalizaCandidate(localizaResult, selectedCandidate);
+		initialLocalizaCandidateIdRef.current = null;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [localizaResult]);
 
 	const goToStep = (step: OnboardingStepKey) => {
 		setCurrentStep(step);
@@ -961,6 +1048,8 @@ export default function OnboardingFlow({
 	};
 
 	const resetListingDraft = () => {
+		initialLocalizaCandidateIdRef.current = null;
+		shouldAutoResolveInitialSourceRef.current = false;
 		hasTrackedLocalizaUrlPasteRef.current = false;
 		hasTrackedManualOverrideRef.current = false;
 		clearActiveLocalizaRequest();
@@ -990,10 +1079,7 @@ export default function OnboardingFlow({
 			localizaResult.sourceMetadata.sourceUrl === sourceMetadata.sourceUrl
 				? buildLocationResolutionFromResult(localizaResult, {
 						status: "manual_override",
-						extraReasonCodes: [
-							"manual_address_override",
-							"suggestion_skipped",
-						],
+						extraReasonCodes: ["manual_address_override", "suggestion_skipped"],
 					})
 				: undefined;
 		const locationResolution =
@@ -1115,7 +1201,7 @@ export default function OnboardingFlow({
 						</h1>
 						<p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
 							La dirección, la fuente y el resultado de Localiza quedan visibles
-							antes de entrar al estudio.
+							antes de ir a la bandeja.
 						</p>
 					</header>
 
@@ -1140,9 +1226,8 @@ export default function OnboardingFlow({
 										<div className="grid gap-2 rounded-md border border-border/70 p-3">
 											<p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
 												{
-													localizaStatusCopy[
-														listing.locationResolution.status
-													].label
+													localizaStatusCopy[listing.locationResolution.status]
+														.label
 												}
 											</p>
 											<p>
@@ -1155,10 +1240,7 @@ export default function OnboardingFlow({
 												<p>
 													Dirección revisada:{" "}
 													<span className="font-medium text-foreground">
-														{
-															listing.locationResolution
-																.resolvedAddressLabel
-														}
+														{listing.locationResolution.resolvedAddressLabel}
 													</span>
 												</p>
 											) : null}
@@ -1187,14 +1269,7 @@ export default function OnboardingFlow({
 					</div>
 
 					<div className="flex flex-wrap gap-3">
-						<Button type="button" onClick={() => router.push("/app/studio")}>
-							Entrar al estudio
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => router.push("/app/inbox")}
-						>
+						<Button type="button" onClick={() => router.push("/app/inbox")}>
 							Ir a la bandeja
 						</Button>
 					</div>
@@ -1206,18 +1281,18 @@ export default function OnboardingFlow({
 	return (
 		<div className="min-h-screen bg-muted/30">
 			<div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12 sm:px-12">
-					<header className="flex flex-col gap-3">
-						<span className="inline-flex items-center gap-2 self-start rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-							Primer ajuste
-						</span>
-						<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-							Configura marca e inmuebles.
-						</h1>
-						<p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
-							Da a Casedra lo justo para trabajar con tu tono, tus propiedades y
-							tu equipo.
-						</p>
-					</header>
+				<header className="flex flex-col gap-3">
+					<span className="inline-flex items-center gap-2 self-start rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+						Primer ajuste
+					</span>
+					<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+						Configura marca e inmuebles.
+					</h1>
+					<p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
+						Da a Casedra lo justo para trabajar con tu tono, tus propiedades y
+						tu equipo.
+					</p>
+				</header>
 
 				<nav className="flex flex-wrap items-center gap-3">
 					{stepOrder.map((step, index) => {
@@ -1262,10 +1337,10 @@ export default function OnboardingFlow({
 					<CardContent className="flex flex-col gap-6 pt-0">
 						{currentStep === "brand" ? (
 							<>
-									<div className="flex flex-col gap-2">
-										<span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-											Marca
-										</span>
+								<div className="flex flex-col gap-2">
+									<span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+										Marca
+									</span>
 									<div className="inline-flex w-full flex-col gap-2 rounded-lg border border-border p-2 sm:flex-row">
 										{brandSourceOptions.map((source) => (
 											<Button
@@ -1297,7 +1372,7 @@ export default function OnboardingFlow({
 												className="text-sm font-medium text-foreground"
 												htmlFor={fieldId("brand-website")}
 											>
-													Sitio web de la empresa
+												Sitio web de la empresa
 											</label>
 											<Input
 												id={fieldId("brand-website")}
@@ -1317,7 +1392,7 @@ export default function OnboardingFlow({
 												className="text-sm font-medium text-foreground"
 												htmlFor={fieldId("brand-company-name")}
 											>
-													Nombre de la empresa
+												Nombre de la empresa
 											</label>
 											<Input
 												id={fieldId("brand-company-name")}
@@ -1337,7 +1412,7 @@ export default function OnboardingFlow({
 												className="text-sm font-medium text-foreground"
 												htmlFor={fieldId("brand-primary-color")}
 											>
-													Color principal
+												Color principal
 											</label>
 											<Input
 												id={fieldId("brand-primary-color")}
@@ -1356,12 +1431,12 @@ export default function OnboardingFlow({
 											<label
 												className="text-sm font-medium text-foreground"
 												htmlFor={fieldId("brand-notes")}
-												>
-													Notas para nuestro equipo
-												</label>
-												<Textarea
-													id={fieldId("brand-notes")}
-													placeholder="Tono, referencias y límites que debamos respetar."
+											>
+												Notas para nuestro equipo
+											</label>
+											<Textarea
+												id={fieldId("brand-notes")}
+												placeholder="Tono, referencias y límites que debamos respetar."
 												value={brand.notes ?? ""}
 												onChange={(event) =>
 													setBrand((prev) => ({
@@ -1442,7 +1517,7 @@ export default function OnboardingFlow({
 												className="text-sm font-medium text-foreground"
 												htmlFor={fieldId("manual-color")}
 											>
-													Color principal
+												Color principal
 											</label>
 											<Input
 												id={fieldId("manual-color")}
@@ -1485,9 +1560,9 @@ export default function OnboardingFlow({
 											>
 												Notas para nuestro equipo
 											</label>
-												<Textarea
-													id={fieldId("manual-notes")}
-													placeholder="Límites de marca, avisos obligatorios o referencias que debamos seguir."
+											<Textarea
+												id={fieldId("manual-notes")}
+												placeholder="Límites de marca, avisos obligatorios o referencias que debamos seguir."
 												value={brand.notes ?? ""}
 												onChange={(event) =>
 													setBrand((prev) => ({
@@ -1507,14 +1582,14 @@ export default function OnboardingFlow({
 							<div className="grid gap-6">
 								<div className="rounded-lg border border-border/70 bg-muted/30 p-4">
 									<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-											<div>
-												<h3 className="text-base font-semibold">
-													Añade tus inmuebles
-												</h3>
-												<p className="text-sm text-muted-foreground">
-													Pega un enlace o escribe los datos a mano. Todo se puede
-													revisar antes de guardar.
-												</p>
+										<div>
+											<h3 className="text-base font-semibold">
+												Añade tus inmuebles
+											</h3>
+											<p className="text-sm text-muted-foreground">
+												Pega un enlace o escribe los datos a mano. Todo se puede
+												revisar antes de guardar.
+											</p>
 										</div>
 										<div className="flex flex-wrap gap-2">
 											{listingSourceOptions.map((source) => (
@@ -1629,14 +1704,14 @@ export default function OnboardingFlow({
 														aria-hidden="true"
 													/>
 													<div className="space-y-1">
-															<p className="font-medium text-foreground">
-																La búsqueda de ubicación exacta no está disponible
-																aquí
-															</p>
-															<p className="text-muted-foreground">
-																Deja la URL de Idealista como referencia y escribe la
-																dirección a mano.
-															</p>
+														<p className="font-medium text-foreground">
+															La búsqueda de ubicación exacta no está disponible
+															aquí
+														</p>
+														<p className="text-muted-foreground">
+															Deja la URL de Idealista como referencia y escribe
+															la dirección a mano.
+														</p>
 													</div>
 												</div>
 											) : null}
@@ -1647,14 +1722,15 @@ export default function OnboardingFlow({
 														className="mt-0.5 h-4 w-4 animate-spin text-primary"
 														aria-hidden="true"
 													/>
-														<div className="space-y-1">
-															<p className="font-medium text-foreground">
-																Buscando la dirección del anuncio
-															</p>
-															<p className="text-muted-foreground">
-																Estamos leyendo el enlace y comprobando la ubicación.
-																Mientras tanto, no hace falta pulsar de nuevo.
-															</p>
+													<div className="space-y-1">
+														<p className="font-medium text-foreground">
+															Buscando la dirección del anuncio
+														</p>
+														<p className="text-muted-foreground">
+															Estamos leyendo el enlace y comprobando la
+															ubicación. Mientras tanto, no hace falta pulsar de
+															nuevo.
+														</p>
 													</div>
 												</div>
 											) : null}
@@ -1698,16 +1774,16 @@ export default function OnboardingFlow({
 											!localizaError &&
 											localizaResult ? (
 												<div className="space-y-3 text-sm">
-														<div className="flex flex-wrap items-center gap-2">
-															<span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-																{localizaStatusCopy[localizaResult.status].label}
-															</span>
-															<span className="text-xs text-muted-foreground">
-																Seguridad:{" "}
-																{Math.round(localizaResult.confidenceScore * 100)}
-																%
-															</span>
-														</div>
+													<div className="flex flex-wrap items-center gap-2">
+														<span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+															{localizaStatusCopy[localizaResult.status].label}
+														</span>
+														<span className="text-xs text-muted-foreground">
+															Seguridad:{" "}
+															{Math.round(localizaResult.confidenceScore * 100)}
+															%
+														</span>
+													</div>
 													<p className="text-muted-foreground">
 														{
 															localizaStatusCopy[localizaResult.status]
@@ -1715,37 +1791,37 @@ export default function OnboardingFlow({
 														}
 													</p>
 													{localizaResult.status === "unresolved" ? (
-															<p className="text-muted-foreground">
-																Todavía no encontramos una dirección segura. Escribe
-																la dirección a mano.
-															</p>
+														<p className="text-muted-foreground">
+															Todavía no encontramos una dirección segura.
+															Escribe la dirección a mano.
+														</p>
 													) : null}
 													{localizaResult.resolvedAddressLabel ? (
 														<p className="font-medium text-foreground">
 															{localizaResult.resolvedAddressLabel}
 														</p>
 													) : null}
-														{localizaResult.sourceMetadata.externalListingId ? (
-															<p className="text-muted-foreground">
-																Referencia de Idealista:{" "}
-																{localizaResult.sourceMetadata.externalListingId}
-															</p>
-														) : null}
-														{localizaResult.officialSourceUrl ? (
-															<p className="text-muted-foreground">
-																Registro oficial:{" "}
+													{localizaResult.sourceMetadata.externalListingId ? (
+														<p className="text-muted-foreground">
+															Referencia de Idealista:{" "}
+															{localizaResult.sourceMetadata.externalListingId}
+														</p>
+													) : null}
+													{localizaResult.officialSourceUrl ? (
+														<p className="text-muted-foreground">
+															Registro oficial:{" "}
 															<a
 																href={localizaResult.officialSourceUrl}
 																target="_blank"
 																rel="noreferrer"
-																	className="text-primary underline underline-offset-4"
-																>
-																	Abrir registro
-																</a>
-															</p>
-														) : null}
-														{localizaResult.status === "building_match" ? (
-															<div className="flex flex-wrap gap-3 pt-1">
+																className="text-primary underline underline-offset-4"
+															>
+																Abrir registro
+															</a>
+														</p>
+													) : null}
+													{localizaResult.status === "building_match" ? (
+														<div className="flex flex-wrap gap-3 pt-1">
 															<Button
 																type="button"
 																onClick={handleApplyBuildingMatch}
@@ -1753,19 +1829,19 @@ export default function OnboardingFlow({
 															>
 																Usar este edificio
 															</Button>
-																<p className="max-w-xl text-muted-foreground">
-																	Usaremos el edificio. Revisa el piso o puerta antes
-																	de guardar.
-																</p>
-															</div>
-														) : null}
+															<p className="max-w-xl text-muted-foreground">
+																Usaremos el edificio. Revisa el piso o puerta
+																antes de guardar.
+															</p>
+														</div>
+													) : null}
 													{localizaResult.status === "needs_confirmation" &&
 													localizaResult.candidates.length > 0 ? (
 														<div className="space-y-3 pt-1">
-																<fieldset className="grid gap-3 sm:grid-cols-2">
-																	<legend className="sr-only">
-																		Opciones de dirección
-																	</legend>
+															<fieldset className="grid gap-3 sm:grid-cols-2">
+																<legend className="sr-only">
+																	Opciones de dirección
+																</legend>
 																{localizaResult.candidates.map((candidate) => (
 																	<label
 																		key={candidate.id}
@@ -1793,22 +1869,22 @@ export default function OnboardingFlow({
 																		/>
 																		<p className="font-medium text-foreground">
 																			{candidate.label}
-																			</p>
-																			<p className="text-muted-foreground">
-																				Seguridad:{" "}
-																				{Math.round(candidate.score * 100)}%
-																			</p>
-																			{candidate.officialUrl ? (
-																				<p>
-																					<a
+																		</p>
+																		<p className="text-muted-foreground">
+																			Seguridad:{" "}
+																			{Math.round(candidate.score * 100)}%
+																		</p>
+																		{candidate.officialUrl ? (
+																			<p>
+																				<a
 																					href={candidate.officialUrl}
 																					target="_blank"
 																					rel="noreferrer"
 																					className="text-primary underline underline-offset-4"
 																				>
-																						Abrir registro
-																					</a>
-																				</p>
+																					Abrir registro
+																				</a>
+																			</p>
 																		) : null}
 																	</label>
 																))}
@@ -1825,18 +1901,18 @@ export default function OnboardingFlow({
 																				selectedLocalizaCandidateId,
 																		)?.prefillLocation
 																	}
-																	>
-																		Usar dirección seleccionada
-																	</Button>
-																	<p className="max-w-xl text-muted-foreground">
-																		{localizaResult.candidates.find(
+																>
+																	Usar dirección seleccionada
+																</Button>
+																<p className="max-w-xl text-muted-foreground">
+																	{localizaResult.candidates.find(
 																		(candidate) =>
 																			candidate.id ===
 																			selectedLocalizaCandidateId,
-																		)?.prefillLocation
-																			? "Revisa la selección antes de aplicar la dirección."
-																			: "Abre el registro oficial y escribe la dirección a mano si no estás seguro."}
-																	</p>
+																	)?.prefillLocation
+																		? "Revisa la selección antes de aplicar la dirección."
+																		: "Abre el registro oficial y escribe la dirección a mano si no estás seguro."}
+																</p>
 															</div>
 														</div>
 													) : null}
@@ -2109,7 +2185,7 @@ export default function OnboardingFlow({
 								{listings.length > 0 ? (
 									<div className="grid gap-4">
 										<h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-											Inmuebles en cola para el estudio
+											Inmuebles listos para la bandeja
 										</h3>
 										<div className="grid gap-4 md:grid-cols-2">
 											{listings.map((listing) => (
@@ -2153,11 +2229,9 @@ export default function OnboardingFlow({
 																		].label
 																	}
 																</p>
-															<p className="text-xs">
-																Dirección revisada
-															</p>
-														</>
-													) : null}
+																<p className="text-xs">Dirección revisada</p>
+															</>
+														) : null}
 														<p>
 															{listing.details.bedrooms} hab ·{" "}
 															{listing.details.bathrooms} baños
@@ -2174,17 +2248,17 @@ export default function OnboardingFlow({
 						{currentStep === "review" ? (
 							<div className="grid gap-6">
 								<div className="grid gap-4 rounded-lg border border-primary/40 bg-primary/5 p-6 sm:grid-cols-[1.5fr_1fr]">
-										<div className="space-y-2">
-											<h3 className="text-lg font-semibold">Resumen de marca</h3>
-											<p className="text-sm text-muted-foreground">
-												Usaremos estos datos en cada pieza que prepare Casedra.
-											</p>
+									<div className="space-y-2">
+										<h3 className="text-lg font-semibold">Resumen de marca</h3>
+										<p className="text-sm text-muted-foreground">
+											Usaremos estos datos en cada pieza que prepare Casedra.
+										</p>
 										<ul className="space-y-1 text-sm text-muted-foreground">
 											<li>
 												<span className="font-medium text-foreground">
 													Empresa:
 												</span>{" "}
-													{brand.companyName || "Pendiente"}
+												{brand.companyName || "Pendiente"}
 											</li>
 											<li>
 												<span className="font-medium text-foreground">
@@ -2219,9 +2293,9 @@ export default function OnboardingFlow({
 												backgroundColor: brand.primaryColorHex || "#0f172a",
 											}}
 										/>
-											<p className="text-xs text-muted-foreground">
-												Lo aplicaremos en piezas, textos y acentos visuales.
-											</p>
+										<p className="text-xs text-muted-foreground">
+											Lo aplicaremos en piezas, textos y acentos visuales.
+										</p>
 									</div>
 								</div>
 
@@ -2269,24 +2343,24 @@ export default function OnboardingFlow({
 																].label
 															}
 														</p>
-															<p className="text-xs text-muted-foreground">
-																Dirección revisada
-															</p>
-														</>
-													) : null}
+														<p className="text-xs text-muted-foreground">
+															Dirección revisada
+														</p>
+													</>
+												) : null}
 											</div>
 										))}
 									</div>
 								</div>
 
 								<div className="grid gap-4 rounded-lg border border-primary/40 bg-primary/5 p-6">
-										<div className="flex flex-col gap-1">
-											<h3 className="text-lg font-semibold">
-												Piezas que se prepararán
-											</h3>
-											<p className="text-sm text-muted-foreground">
-												Esto queda listo para trabajar en el estudio.
-											</p>
+									<div className="flex flex-col gap-1">
+										<h3 className="text-lg font-semibold">
+											Piezas que se prepararán
+										</h3>
+										<p className="text-sm text-muted-foreground">
+											Esto queda listo para trabajar desde la bandeja.
+										</p>
 									</div>
 									<div className="grid gap-3 md:grid-cols-2">
 										{plannedGenerations.map((generation) => (
@@ -2294,16 +2368,16 @@ export default function OnboardingFlow({
 												key={`${generation.listingId}-${generation.kind}`}
 												className="flex flex-col gap-2 rounded-md border border-dashed border-primary/40 bg-background p-4 text-sm"
 											>
-													<span className="font-semibold text-foreground">
-														{generation.label}
-													</span>
-													<p className="text-muted-foreground">
-														Para {generation.listingTitle}
-													</p>
-												</div>
-											))}
-										</div>
+												<span className="font-semibold text-foreground">
+													{generation.label}
+												</span>
+												<p className="text-muted-foreground">
+													Para {generation.listingTitle}
+												</p>
+											</div>
+										))}
 									</div>
+								</div>
 								{submissionError ? (
 									<div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
 										{submissionError}
@@ -2370,7 +2444,7 @@ export default function OnboardingFlow({
 								) : (
 									<Sparkles className="h-4 w-4" aria-hidden="true" />
 								)}
-								Guardar inmuebles y entrar al estudio
+								Guardar inmuebles e ir a la bandeja
 							</Button>
 						)}
 					</div>
@@ -2418,25 +2492,23 @@ const stepDefinitions: Record<
 		icon: typeof Building2;
 	}
 > = {
-		brand: {
-			label: "Marca",
-			title: "Define tu marca",
-			description:
-				"Nombre, web, color y tono. Nada más de lo necesario.",
-			icon: Building2,
-		},
-		listings: {
-			label: "Inmuebles",
-			title: "Añade inmuebles",
-			description:
-				"Cada inmueble queda listo para preparar piezas a medida.",
-			icon: ListChecks,
-		},
+	brand: {
+		label: "Marca",
+		title: "Define tu marca",
+		description: "Nombre, web, color y tono. Nada más de lo necesario.",
+		icon: Building2,
+	},
+	listings: {
+		label: "Inmuebles",
+		title: "Añade inmuebles",
+		description: "Cada inmueble queda listo para preparar piezas a medida.",
+		icon: ListChecks,
+	},
 	review: {
 		label: "Revisión",
 		title: "Revisar y lanzar",
 		description:
-			"Confirma la captura y entra al estudio para empezar a generar recursos.",
+			"Confirma la captura y abre la bandeja para empezar a trabajar.",
 		icon: Sparkles,
 	},
 };

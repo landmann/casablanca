@@ -283,6 +283,7 @@ const locationResolutions = defineTable({
 			v.literal("unresolved"),
 		),
 	),
+	propertyHistoryKey: v.optional(v.string()),
 	result: v.optional(resolveIdealistaLocationResultValidator),
 	normalizedSignals: v.optional(v.any()),
 	leaseOwner: v.optional(v.string()),
@@ -302,7 +303,31 @@ const locationResolutions = defineTable({
 		"resolverVersion",
 	])
 	.index("by_source_url", ["sourceUrl"])
+	.index("by_property_history_key", ["propertyHistoryKey"])
 	.index("by_expires_at", ["expiresAt"]);
+
+const localizaMarketObservations = defineTable({
+	observationKey: v.string(),
+	propertyHistoryKey: v.string(),
+	portal: v.string(),
+	observedAt: v.string(),
+	askingPrice: v.optional(v.number()),
+	currencyCode: v.optional(v.literal("EUR")),
+	advertiserName: v.optional(v.string()),
+	agencyName: v.optional(v.string()),
+	sourceUrl: v.optional(v.string()),
+	daysPublished: v.optional(v.number()),
+	firstSeenAt: v.optional(v.string()),
+	lastSeenAt: v.optional(v.string()),
+	provenanceLabel: v.string(),
+	provenanceUrl: v.optional(v.string()),
+	sourceRecordId: v.optional(v.string()),
+	createdByUserId: v.string(),
+	createdAt: v.number(),
+	updatedAt: v.number(),
+})
+	.index("by_observation_key", ["observationKey"])
+	.index("by_property_history_key", ["propertyHistoryKey"]);
 
 const localizaLiveFixtureValidationStatus = v.union(
 	v.literal("pending_official_validation"),
@@ -574,6 +599,7 @@ export default defineSchema({
 	listingCreateRequests,
 	localizaGoldenLiveFixtures,
 	localizaIncidents,
+	localizaMarketObservations,
 	locationResolutions,
 	leads,
 	mediaJobs,

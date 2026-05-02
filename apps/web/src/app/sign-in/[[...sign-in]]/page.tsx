@@ -1,9 +1,15 @@
 import { SignIn } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
+import {
+	ArrowLeft,
+	Building2,
+	ShieldCheck,
+	Sparkles,
+	Workflow,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Building2, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 
 import { isAllowedAppUser } from "@/lib/app-access";
 
@@ -16,27 +22,25 @@ export const metadata: Metadata = {
 const accessReasons = [
 	{
 		icon: Workflow,
-		title: "Reparte cada contacto",
-		description:
-			"WhatsApp, portales y formularios llegan a una sola bandeja.",
+		title: "Ordena la bandeja",
+		description: "WhatsApp, portales y formularios llegan a un solo lugar.",
 	},
 	{
 		icon: ShieldCheck,
 		title: "Mantén el control visible",
 		description:
-			"Consulta cobertura, traspasos y seguimientos pendientes sin pedirle capturas al equipo.",
+			"Consulta cobertura, traspasos y pendientes sin pedir capturas.",
 	},
 	{
 		icon: Sparkles,
-		title: "Demuestra el trabajo hecho",
-		description:
-			"Dirección ve qué se respondió, qué falta y dónde hay que actuar.",
+		title: "Muestra el trabajo hecho",
+		description: "Dirección ve respuestas, huecos y siguientes acciones.",
 	},
 ] as const;
 
 const accessSignals = [
 	"Cobertura de contactos",
-	"Traspaso entre agentes",
+	"Traspasos claros",
 	"Pruebas para vendedores",
 ] as const;
 
@@ -71,7 +75,10 @@ export default async function SignInPage() {
 							</span>
 						</Link>
 						<div className="hidden items-center gap-2 rounded-full border border-border bg-background/85 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground shadow-sm sm:inline-flex">
-							<Building2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+							<Building2
+								className="h-3.5 w-3.5 text-primary"
+								aria-hidden="true"
+							/>
 							Acceso al espacio de Casedra
 						</div>
 					</header>
@@ -79,19 +86,21 @@ export default async function SignInPage() {
 					<section className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(24rem,30rem)] lg:py-16 xl:gap-16">
 						<div className="max-w-3xl">
 							<div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/80 bg-background/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-sm backdrop-blur sm:px-4 sm:text-[11px] sm:tracking-[0.28em]">
-								<Building2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+								<Building2
+									className="h-3.5 w-3.5 text-primary"
+									aria-hidden="true"
+								/>
 								Control claro para la oficina
 							</div>
 							<h1 className="mt-6 max-w-4xl text-balance font-serif text-[3rem] font-normal leading-[0.98] text-foreground sm:text-[4.4rem] xl:text-[5.1rem]">
-									Inicia sesión para controlar cada contacto.
+								Inicia sesión para controlar cada contacto.
 							</h1>
 							<p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-								Casedra le da a tu oficina un único lugar para revisar la primera
-								respuesta, el reparto, la cobertura y la prueba de que las conversaciones
-								con propietarios no se escapan entre canales.
+								Casedra reúne primera respuesta, reparto, cobertura y
+								conversaciones con propietarios en una sola bandeja.
 							</p>
 							<p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">
-									El acceso está limitado a cuentas aprobadas por ahora.
+								El acceso está limitado a cuentas aprobadas por ahora.
 							</p>
 
 							<div className="mt-8 flex flex-wrap gap-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:gap-3 sm:text-xs sm:tracking-[0.2em]">

@@ -1,7 +1,9 @@
-const ALLOWED_APP_EMAILS = new Set([
+import { env } from "@/env";
+
+const DEFAULT_ALLOWED_APP_EMAILS = [
 	"nlandmanc@gmail.com",
 	"debbielandman77@gmail.com",
-]);
+] as const;
 
 type ClerkUserLike = {
 	primaryEmailAddress?: {
@@ -16,6 +18,19 @@ type ClerkUserLike = {
 
 const normalizeEmailAddress = (emailAddress?: string | null) =>
 	emailAddress?.trim().toLowerCase() ?? null;
+
+const parseAllowedEmailAddressList = (value?: string) =>
+	value
+		?.split(",")
+		.map((emailAddress) => normalizeEmailAddress(emailAddress))
+		.filter((emailAddress): emailAddress is string => Boolean(emailAddress)) ??
+	[];
+
+const getAllowedAppEmails = () =>
+	new Set([
+		...DEFAULT_ALLOWED_APP_EMAILS,
+		...parseAllowedEmailAddressList(env.APP_ALLOWED_EMAILS),
+	]);
 
 export const getCurrentUserPrimaryEmailAddress = (user: ClerkUserLike) => {
 	const primaryEmailAddress = normalizeEmailAddress(
@@ -37,8 +52,13 @@ export const getCurrentUserPrimaryEmailAddress = (user: ClerkUserLike) => {
 	return normalizeEmailAddress(user?.emailAddresses?.[0]?.emailAddress);
 };
 
-export const isAllowedAppEmailAddress = (emailAddress?: string | null) =>
-	Boolean(emailAddress && ALLOWED_APP_EMAILS.has(normalizeEmailAddress(emailAddress)!));
+export const isAllowedAppEmailAddress = (emailAddress?: string | null) => {
+	const normalizedEmailAddress = normalizeEmailAddress(emailAddress);
+
+	return Boolean(
+		normalizedEmailAddress && getAllowedAppEmails().has(normalizedEmailAddress),
+	);
+};
 
 export const isAllowedAppUser = (user: ClerkUserLike) =>
 	isAllowedAppEmailAddress(getCurrentUserPrimaryEmailAddress(user));

@@ -7,10 +7,9 @@ import {
 	CardContent,
 	CardHeader,
 	CardTitle,
-	Textarea,
 	cn,
+	Textarea,
 } from "@casedra/ui";
-import { UserButton } from "@clerk/nextjs";
 import {
 	AlertCircle,
 	ArrowLeft,
@@ -24,33 +23,31 @@ import {
 	RefreshCcw,
 	ShieldCheck,
 	UserCircle2,
-	Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { trpc } from "@/trpc/shared";
 
 const queueFilters: Array<{ value: "all" | ConversationState; label: string }> =
 	[
-			{ value: "all", label: "Todos" },
-			{ value: "new", label: "Nuevo" },
-			{ value: "awaiting_human", label: "Necesita persona" },
-			{ value: "human_active", label: "Con persona" },
-			{ value: "closed", label: "Cerrado" },
-		];
+		{ value: "all", label: "Todos" },
+		{ value: "new", label: "Nuevo" },
+		{ value: "awaiting_human", label: "Necesita responsable" },
+		{ value: "human_active", label: "Con responsable" },
+		{ value: "closed", label: "Cerrado" },
+	];
 
 const stateLabel: Record<ConversationState, string> = {
 	new: "Nuevo",
 	bot_active: "Casedra responde",
-	awaiting_human: "Necesita persona",
-	human_active: "Con persona",
+	awaiting_human: "Necesita responsable",
+	human_active: "Con responsable",
 	closed: "Cerrado",
 };
 
 const handoffTriggerLabel: Record<string, string> = {
 	low_confidence: "Necesita revisión",
-	lead_requested_human: "El contacto pidió una persona",
+	lead_requested_human: "Pidió atención humana",
 	manual_takeover: "Toma manual",
 	routing_rule: "Regla de reparto",
 	manager_reassign: "Reasignación de responsable",
@@ -310,6 +307,7 @@ export default function InboxScreen() {
 		setPendingState(nextStateOptions(conversationDetail)[0] ?? "");
 	}, [conversationDetail, membershipsQuery.data]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset composer whenever the selected thread changes.
 	useEffect(() => {
 		setComposerMode("reply");
 		setComposerBody("");
@@ -484,6 +482,34 @@ export default function InboxScreen() {
 		!composerBody.trim() ||
 		(composerMode === "reply" &&
 			(conversationDetail.state === "closed" || replyBlockedByOwnership));
+	const topMetrics = [
+		{
+			label: "Bandeja",
+			value: totalCounts.all,
+			icon: MessageSquareText,
+		},
+		{
+			label: "Esperando",
+			value: totalCounts.awaiting_human,
+			icon: Clock3,
+		},
+		{
+			label: "Primera respuesta",
+			value: formatDuration(
+				responseMetricsQuery.data?.medianFirstResponseSeconds ??
+					inboxSummaryQuery.data?.medianFirstResponseSeconds,
+			),
+			icon: Clock3,
+		},
+		{
+			label: "Cobertura",
+			value: formatPercent(
+				responseMetricsQuery.data?.responseCoveragePct ??
+					inboxSummaryQuery.data?.responseCoveragePct,
+			),
+			icon: ShieldCheck,
+		},
+	] as const;
 
 	if (agencyQuery.isLoading) {
 		return (
@@ -535,9 +561,6 @@ export default function InboxScreen() {
 							>
 								Reintentar
 							</Button>
-							<Button asChild variant="outline" className="rounded-full px-5">
-								<Link href="/app/studio">Volver al estudio</Link>
-							</Button>
 						</div>
 						{createWorkspaceMutation.error ? (
 							<p className="text-sm leading-6 text-destructive">
@@ -558,39 +581,22 @@ export default function InboxScreen() {
 	return (
 		<div className="min-h-screen bg-background text-foreground">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-6 sm:px-8 sm:py-8">
-				<header className="relative overflow-hidden rounded-[32px] border border-border/80 bg-background/92 p-6 shadow-[0_24px_80px_rgba(31,26,20,0.07)] sm:p-8">
-					<div className="pointer-events-none absolute inset-0">
-						<div className="absolute left-[-5rem] top-[-4rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(156,97,55,0.14),transparent_62%)] blur-3xl" />
-						<div className="absolute right-[-4rem] top-0 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(232,223,204,0.95),transparent_68%)] blur-3xl" />
-					</div>
-
-					<div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-						<div className="space-y-4">
-							<div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/90 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+				<header className="rounded-[28px] border border-border/80 bg-background/95 p-5 shadow-[0_18px_60px_rgba(31,26,20,0.06)] sm:p-6">
+					<div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+						<div>
+							<div className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
 								<Building2
 									className="h-3.5 w-3.5 text-primary"
 									aria-hidden="true"
 								/>
-									Bandeja en directo
+								{agency.agency.name}
 							</div>
-							<div>
-								<h1 className="font-serif text-[2.6rem] font-normal leading-tight sm:text-[4.2rem]">
-									Bandeja
-								</h1>
-								<p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-										{agency.agency.name} ya trabaja con conversaciones reales,
-										responsables claros e historial completo.
-								</p>
-							</div>
+							<h1 className="mt-2 font-serif text-[2.4rem] font-normal leading-tight sm:text-[3.4rem]">
+								Bandeja
+							</h1>
 						</div>
 
 						<div className="flex flex-col gap-4 lg:items-end">
-							<div className="flex items-center gap-3">
-								<Button asChild variant="outline" className="rounded-full px-5">
-									<Link href="/app/studio">Vista del estudio</Link>
-								</Button>
-								<UserButton />
-							</div>
 							<p className="text-sm text-muted-foreground">
 								Zona horaria: {agency.agency.timezone}
 							</p>
@@ -598,141 +604,31 @@ export default function InboxScreen() {
 					</div>
 				</header>
 
-				<section className="grid gap-4 lg:grid-cols-4">
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<MessageSquareText className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Cola total
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{totalCounts.all}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<Clock3 className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Esperando humano
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{totalCounts.awaiting_human}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<Users className="h-5 w-5" aria-hidden="true" />
-							</div>
-								<div>
-									<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-										Con persona
-									</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{totalCounts.human_active}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<ShieldCheck className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Cerradas correctamente
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{totalCounts.closed}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-				</section>
+				<section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+					{topMetrics.map((metric) => {
+						const Icon = metric.icon;
 
-				<section className="grid gap-4 lg:grid-cols-4">
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<Clock3 className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Mediana primera respuesta
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{formatDuration(
-										responseMetricsQuery.data?.medianFirstResponseSeconds ??
-											inboxSummaryQuery.data?.medianFirstResponseSeconds,
-									)}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<ShieldCheck className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Cobertura de respuesta
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{formatPercent(
-										responseMetricsQuery.data?.responseCoveragePct ??
-											inboxSummaryQuery.data?.responseCoveragePct,
-									)}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<ArrowRightLeft className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Tasa de traspaso
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{formatPercent(
-										responseMetricsQuery.data?.handoffRatePct ??
-											inboxSummaryQuery.data?.handoffRatePct,
-									)}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="rounded-[26px] border-border/80 bg-background/95">
-						<CardContent className="flex items-center gap-4 p-5">
-							<div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-								<RefreshCcw className="h-5 w-5" aria-hidden="true" />
-							</div>
-							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Reabiertas tras cierre
-								</p>
-								<p className="mt-1 text-2xl font-semibold text-foreground">
-									{formatPercent(
-										inboxSummaryQuery.data?.reopenedConversationRatePct,
-									)}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
+						return (
+							<Card
+								key={metric.label}
+								className="rounded-[24px] border-border/80 bg-background/95"
+							>
+								<CardContent className="flex items-center gap-4 p-4">
+									<div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+										<Icon className="h-4 w-4" aria-hidden="true" />
+									</div>
+									<div>
+										<p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+											{metric.label}
+										</p>
+										<p className="mt-1 text-2xl font-semibold text-foreground">
+											{metric.value}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+						);
+					})}
 				</section>
 
 				<div aria-live="polite" className="min-h-6 text-sm text-foreground">
@@ -750,11 +646,10 @@ export default function InboxScreen() {
 							<div className="flex items-center justify-between gap-3">
 								<div>
 									<CardTitle className="font-serif text-[2rem] font-normal leading-tight">
-										Cola
+										Hilos
 									</CardTitle>
 									<p className="mt-2 text-sm leading-6 text-muted-foreground">
-										Cada conversación entrante con estado y responsable
-										explícitos.
+										Estado, responsable y última actividad.
 									</p>
 								</div>
 								<Button
@@ -762,7 +657,7 @@ export default function InboxScreen() {
 									size="icon"
 									className="rounded-full"
 									onClick={() => conversationsQuery.refetch()}
-									aria-label="Actualizar cola"
+									aria-label="Actualizar bandeja"
 								>
 									<RefreshCcw className="h-4 w-4" aria-hidden="true" />
 								</Button>
@@ -807,7 +702,7 @@ export default function InboxScreen() {
 												className="rounded-full px-4"
 												onClick={() => conversationsQuery.refetch()}
 											>
-												Reintentar cola
+												Reintentar bandeja
 											</Button>
 										</div>
 									</div>
@@ -819,7 +714,7 @@ export default function InboxScreen() {
 									</p>
 									<p className="mt-2 text-sm leading-6 text-muted-foreground">
 										{filterState === "all"
-											? "Los datos iniciales o la ingestión en directo aparecerán aquí."
+											? "Los hilos aparecerán aquí cuando entre actividad."
 											: `No hay conversaciones en ${queueFilters.find((filter) => filter.value === filterState)?.label.toLowerCase()}.`}
 									</p>
 								</div>
@@ -830,7 +725,7 @@ export default function InboxScreen() {
 										type="button"
 										onClick={() => setSelectedConversationId(conversation.id)}
 										className={cn(
-											"w-full rounded-[24px] border p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+											"w-full rounded-[24px] border p-5 text-left transition-[background-color,border-color,box-shadow,transform] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 											selectedConversationId === conversation.id
 												? "border-primary/40 bg-primary/10 shadow-[0_16px_42px_rgba(156,97,55,0.10)]"
 												: "border-border/80 bg-secondary/45 hover:border-primary/25 hover:bg-secondary/70",
@@ -893,9 +788,7 @@ export default function InboxScreen() {
 											Selecciona una conversación
 										</p>
 										<p className="max-w-md text-sm leading-6 text-muted-foreground">
-											Elige cualquier elemento de la cola para revisar la
-											transcripción, ver el historial de responsables y actuar
-											sobre el hilo.
+											Elige un hilo para leer, responder o reasignar.
 										</p>
 									</div>
 								</CardContent>
@@ -974,7 +867,7 @@ export default function InboxScreen() {
 												</p>
 												<p className="mt-1 text-sm text-muted-foreground">
 													{conversationDetail.activeAssignment?.reason ??
-														"El responsable actual viene del estado de la conversación."}
+														"Asignado según el estado actual."}
 												</p>
 											</div>
 											<div className="rounded-[22px] border border-border/80 bg-secondary/45 p-4">
@@ -1236,8 +1129,8 @@ export default function InboxScreen() {
 										</div>
 										<p className="text-sm leading-6 text-muted-foreground">
 											{composerMode === "reply"
-												? "Una respuesta humana registra el tiempo de primera respuesta cuando hace falta y toma la responsabilidad del hilo."
-												: "Las notas internas quedan en la transcripción sin contar como respuesta al cliente."}
+												? "Respuesta visible para el contacto."
+												: "Nota visible solo para tu equipo."}
 										</p>
 									</CardHeader>
 									<CardContent className="space-y-4">
@@ -1247,7 +1140,7 @@ export default function InboxScreen() {
 											placeholder={
 												composerMode === "reply"
 													? "Escribe la respuesta que quieres que reciba este contacto."
-													: "Añade contexto para la siguiente persona del equipo."
+													: "Añade contexto para el siguiente responsable."
 											}
 											className="min-h-[140px] rounded-[24px] border-border/80 px-4 py-4"
 										/>
@@ -1255,12 +1148,12 @@ export default function InboxScreen() {
 											<p className="text-sm text-muted-foreground">
 												{replyBlockedByOwnership && composerMode === "reply"
 													? "Las respuestas están bloqueadas hasta que el responsable actual traspase este hilo o un responsable lo reasigne."
-														: conversationDetail.state === "closed" &&
-																composerMode === "reply"
-															? "Las conversaciones cerradas necesitan una nueva actividad entrante antes de poder responder."
-															: composerMode === "reply"
-																? "Responder desde aquí deja el hilo en manos del equipo."
-																: "Las notas solo son visibles para tu agencia."}
+													: conversationDetail.state === "closed" &&
+															composerMode === "reply"
+														? "Las conversaciones cerradas necesitan una nueva actividad entrante antes de poder responder."
+														: composerMode === "reply"
+															? "Responder desde aquí deja el hilo en manos del equipo."
+															: "Las notas solo son visibles para tu agencia."}
 											</p>
 											<Button
 												className="rounded-full px-5"

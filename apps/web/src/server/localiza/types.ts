@@ -42,6 +42,7 @@ export interface LocalizaCachedResolutionRecord {
 	requestedStrategy: LocalizaAcquisitionStrategy;
 	resolverVersion: string;
 	resultStatus?: ResolveIdealistaLocationResult["status"];
+	propertyHistoryKey?: string;
 	result?: ResolveIdealistaLocationResult;
 	normalizedSignals?: IdealistaSignals;
 	leaseOwner?: string;

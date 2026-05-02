@@ -16,20 +16,15 @@ import {
 import {
 	AlertCircle,
 	ArrowRight,
-	Building2,
 	CheckCircle2,
-	Database,
 	ExternalLink,
-	FileSearch,
-	ListChecks,
+	History,
 	LoaderCircle,
 	MapPin,
-	Radar,
 	Search,
-	ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
 	type AvailableLocalizaStrategy,
@@ -45,6 +40,20 @@ type LocalizaResolverClientProps = {
 	initialSourceUrl?: string;
 };
 
+type LocalizaSearchHistoryEntry = {
+	sourceUrl: string;
+	searchedAt: string;
+	resolvedAddressLabel?: string;
+	status?: ResolveIdealistaLocationResult["status"];
+	officialSource?: string;
+	cacheExpiresAt?: string;
+};
+
+type LocalizaCandidate = ResolveIdealistaLocationResult["candidates"][number];
+
+const LOCALIZA_SEARCH_HISTORY_STORAGE_KEY = "casedra.localiza.searchHistory.v1";
+const MAX_LOCALIZA_SEARCH_HISTORY_ITEMS = 10;
+
 const resultCopy: Record<
 	ResolveIdealistaLocationResult["status"],
 	{ label: string; description: string }
@@ -59,7 +68,7 @@ const resultCopy: Record<
 			"Localiza encontró el edificio. Revisa el piso o completa lo que falte.",
 	},
 	needs_confirmation: {
-		label: "Elige una opción",
+		label: "Opciones encontradas",
 		description:
 			"Localiza encontró varias direcciones oficiales posibles para este anuncio.",
 	},
@@ -96,52 +105,22 @@ const getResultCopy = (result: ResolveIdealistaLocationResult) => {
 	return resultCopy[result.status];
 };
 
-const resolverStages = [
+const loadingMessages = [
 	{
-		key: "parse",
-		label: "Normalizando enlace",
-		description:
-			"Localiza extrae la referencia del anuncio y trabaja con una URL canónica.",
-		icon: FileSearch,
-	},
-		{
-			key: "cache",
-			label: "Revisando trabajo reciente",
-			description:
-				"Comprueba si este anuncio ya se resolvió hace poco para evitar repetir trabajo.",
-			icon: Database,
-		},
-		{
-			key: "acquire",
-			label: "Leyendo señales del anuncio",
-			description:
-				"Lee el anuncio para recuperar coordenadas, municipio y pistas postales.",
-			icon: Radar,
-		},
-	{
-		key: "catastro",
-		label: "Consultando fuente oficial",
-		description:
-			"Contrasta esas señales con Catastro o el registro territorial correspondiente.",
-		icon: Building2,
+		key: "reading",
+		text: "Buscando señales públicas en el anuncio...",
 	},
 	{
-		key: "verify",
-		label: "Midiendo confianza",
-		description:
-			"Compara candidatos oficiales y separa coincidencia exacta, edificio o confirmación manual.",
-		icon: ShieldCheck,
+		key: "official",
+		text: "Contrastando la dirección con fuentes oficiales...",
 	},
-		{
-			key: "persist",
-			label: "Preparando resultado",
-			description:
-				"Guarda el resultado para crear el inmueble sin perder el trabajo.",
-			icon: ListChecks,
-		},
+	{
+		key: "result",
+		text: "Preparando un resultado verificable...",
+	},
 ] as const;
 
-const RESOLVER_STAGE_INTERVAL_MS = 1800;
+const LOADING_MESSAGE_INTERVAL_MS = 2100;
 
 const formatAddress = (location?: ListingLocation) =>
 	location
@@ -156,123 +135,241 @@ const formatAddress = (location?: ListingLocation) =>
 				.join(", ")
 		: null;
 
-const buildOnboardingHref = (sourceUrl: string) =>
-	`/app/onboarding?step=listings&sourceUrl=${encodeURIComponent(sourceUrl)}`;
+const buildOnboardingHref = (sourceUrl: string, candidateId?: string) => {
+	const params = new URLSearchParams({
+		step: "listings",
+		sourceUrl,
+	});
 
-const formatSourceUrlPreview = (url: string) =>
-	url
+	if (candidateId) {
+		params.set("localizaCandidateId", candidateId);
+	}
+
+	return `/app/onboarding?${params.toString()}`;
+};
+
+const getCandidateMeta = (candidate: LocalizaCandidate) =>
+	[
+		candidate.parcelRef14 ? `Parcela ${candidate.parcelRef14}` : null,
+		typeof candidate.distanceMeters === "number"
+			? `${Math.round(candidate.distanceMeters)} m del anuncio`
+			: null,
+	].filter(Boolean);
+
+const getHistoryUrlKey = (sourceUrl: string) => {
+	const trimmedSourceUrl = sourceUrl.trim();
+
+	try {
+		const parsedUrl = new URL(trimmedSourceUrl);
+		parsedUrl.hash = "";
+		parsedUrl.hostname = parsedUrl.hostname.toLowerCase();
+		parsedUrl.pathname = parsedUrl.pathname.replace(/\/+$/, "") || "/";
+
+		return parsedUrl.toString().replace(/\/$/, "").toLowerCase();
+	} catch {
+		return trimmedSourceUrl.replace(/\/+$/, "").toLowerCase();
+	}
+};
+
+const formatHistorySourceUrl = (sourceUrl: string) =>
+	sourceUrl
 		.replace(/^https?:\/\/(www\.)?/i, "")
 		.replace(/\/$/, "")
-		.slice(0, 56);
+		.slice(0, 72);
 
-function LocalizaProgressPanel({
-	activeStageIndex,
+const getHistoryTimestamp = (entry: LocalizaSearchHistoryEntry) => {
+	const timestamp = Date.parse(entry.searchedAt);
+
+	return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const formatHistoryDate = (entry: LocalizaSearchHistoryEntry) => {
+	const timestamp = getHistoryTimestamp(entry);
+
+	if (!timestamp) {
+		return "Fecha no disponible";
+	}
+
+	return new Intl.DateTimeFormat("es-ES", {
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		month: "short",
+	}).format(new Date(timestamp));
+};
+
+const mergeSearchHistoryEntry = (
+	entries: LocalizaSearchHistoryEntry[],
+	nextEntry: LocalizaSearchHistoryEntry,
+) => {
+	const nextEntryKey = getHistoryUrlKey(nextEntry.sourceUrl);
+	const mergedEntries = [
+		nextEntry,
+		...entries.filter(
+			(entry) => getHistoryUrlKey(entry.sourceUrl) !== nextEntryKey,
+		),
+	];
+	const seenKeys = new Set<string>();
+
+	return mergedEntries
+		.sort(
+			(left, right) => getHistoryTimestamp(right) - getHistoryTimestamp(left),
+		)
+		.filter((entry) => {
+			const entryKey = getHistoryUrlKey(entry.sourceUrl);
+
+			if (!entryKey || seenKeys.has(entryKey)) {
+				return false;
+			}
+
+			seenKeys.add(entryKey);
+			return true;
+		})
+		.slice(0, MAX_LOCALIZA_SEARCH_HISTORY_ITEMS);
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null;
+
+const parseSearchHistoryEntry = (
+	value: unknown,
+): LocalizaSearchHistoryEntry | null => {
+	if (!isRecord(value) || typeof value.sourceUrl !== "string") {
+		return null;
+	}
+
+	const searchedAt =
+		typeof value.searchedAt === "string" &&
+		Number.isFinite(Date.parse(value.searchedAt))
+			? value.searchedAt
+			: null;
+
+	if (!searchedAt) {
+		return null;
+	}
+
+	const status =
+		typeof value.status === "string" && Object.hasOwn(resultCopy, value.status)
+			? (value.status as ResolveIdealistaLocationResult["status"])
+			: undefined;
+	const cacheExpiresAt =
+		typeof value.cacheExpiresAt === "string" &&
+		Number.isFinite(Date.parse(value.cacheExpiresAt))
+			? value.cacheExpiresAt
+			: undefined;
+
+	return {
+		sourceUrl: value.sourceUrl,
+		searchedAt,
+		status,
+		cacheExpiresAt,
+		officialSource:
+			typeof value.officialSource === "string"
+				? value.officialSource
+				: undefined,
+		resolvedAddressLabel:
+			typeof value.resolvedAddressLabel === "string"
+				? value.resolvedAddressLabel
+				: undefined,
+	};
+};
+
+const parseStoredSearchHistory = (storedValue: string | null) => {
+	if (!storedValue) {
+		return [];
+	}
+
+	try {
+		const parsedValue: unknown = JSON.parse(storedValue);
+
+		if (!Array.isArray(parsedValue)) {
+			return [];
+		}
+
+		return parsedValue.reduce<LocalizaSearchHistoryEntry[]>(
+			(entries, value) => {
+				const entry = parseSearchHistoryEntry(value);
+
+				return entry ? mergeSearchHistoryEntry(entries, entry) : entries;
+			},
+			[],
+		);
+	} catch {
+		return [];
+	}
+};
+
+const buildPendingHistoryEntry = (
+	sourceUrl: string,
+): LocalizaSearchHistoryEntry => ({
 	sourceUrl,
+	searchedAt: new Date().toISOString(),
+});
+
+const buildResolvedHistoryEntry = (
+	result: ResolveIdealistaLocationResult,
+	fallbackSourceUrl: string,
+): LocalizaSearchHistoryEntry => ({
+	sourceUrl: result.sourceMetadata.sourceUrl || fallbackSourceUrl,
+	searchedAt: new Date().toISOString(),
+	resolvedAddressLabel:
+		result.resolvedAddressLabel ??
+		formatAddress(result.prefillLocation) ??
+		result.candidates[0]?.label,
+	status: result.status,
+	officialSource: result.officialSource,
+	cacheExpiresAt: result.cacheExpiresAt,
+});
+
+function LocalizaLoadingComposer({
+	activeMessageIndex,
 }: {
-	activeStageIndex: number;
-	sourceUrl: string;
+	activeMessageIndex: number;
 }) {
-	const normalizedStageIndex = activeStageIndex % resolverStages.length;
-	const activeStage = resolverStages[normalizedStageIndex] ?? resolverStages[0];
-	const ActiveStageIcon = activeStage.icon;
-	const progressWidth = `${((normalizedStageIndex + 1) / resolverStages.length) * 100}%`;
-	const sourceUrlPreview = formatSourceUrlPreview(sourceUrl);
+	const activeMessage =
+		loadingMessages[activeMessageIndex % loadingMessages.length] ??
+		loadingMessages[0];
 
 	return (
-		<Card className="overflow-hidden rounded-[1.5rem] border-border/80 bg-background shadow-[0_22px_70px_rgba(31,26,20,0.08)]">
-			<CardContent className="p-0">
-				<div className="relative overflow-hidden p-5 sm:p-6">
-					<div
-						className="localiza-scan-line absolute inset-x-0 top-0 h-px bg-primary/70"
-						aria-hidden="true"
-					/>
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-						<div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-primary/10 text-primary shadow-[0_10px_30px_rgba(156,97,55,0.14)]">
-							<span
-								className="absolute inset-0 rounded-[1rem] ring-1 ring-primary/20"
-								aria-hidden="true"
-							/>
-							<ActiveStageIcon
-								key={activeStage.key}
-								className="localiza-icon-swap h-5 w-5"
-								aria-hidden="true"
-							/>
-						</div>
-						<div className="min-w-0 flex-1">
-							<div className="flex flex-wrap items-center gap-2">
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-									Resolviendo dirección
-								</p>
-								<span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
-									<span className="tabular-nums">
-										{normalizedStageIndex + 1}
-									</span>
-									/{resolverStages.length}
-								</span>
-							</div>
-							<h2 className="mt-2 text-xl font-semibold text-foreground [text-wrap:balance]">
-								{activeStage.label}
-							</h2>
-							<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground [text-wrap:pretty]">
-								{activeStage.description}
-							</p>
-							<div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-								<span className="rounded-full bg-secondary/80 px-3 py-1.5">
-									{sourceUrlPreview || "Idealista"}
-								</span>
-							</div>
-						</div>
-					</div>
-
-					<div className="mt-5 h-1.5 overflow-hidden rounded-full bg-secondary">
-						<div
-							className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
-							style={{ width: progressWidth }}
-						/>
-					</div>
-
-					<ol className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-						{resolverStages.map((stage, index) => {
-							const StageIcon = stage.icon;
-							const isActive = index === normalizedStageIndex;
-							const isComplete = index < normalizedStageIndex;
-
-							return (
-								<li
-									key={stage.key}
-									className={[
-										"rounded-[0.95rem] px-3 py-3 text-sm transition-[background-color,box-shadow,opacity,transform] duration-300",
-										isActive
-											? "bg-primary/10 text-foreground shadow-[0_12px_32px_rgba(156,97,55,0.12)]"
-											: "bg-secondary/60 text-muted-foreground",
-										isComplete ? "opacity-85" : "opacity-100",
-									].join(" ")}
-								>
-									<div className="flex items-center gap-2">
-										<span
-											className={[
-												"flex h-7 w-7 items-center justify-center rounded-[0.6rem]",
-												isActive || isComplete
-													? "bg-primary/10 text-primary"
-													: "bg-background text-muted-foreground",
-											].join(" ")}
-										>
-											{isComplete ? (
-												<CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-											) : (
-												<StageIcon className="h-3.5 w-3.5" aria-hidden="true" />
-											)}
-										</span>
-										<span className="font-medium">{stage.label}</span>
-									</div>
-								</li>
-							);
-						})}
-					</ol>
-
+		<div
+			className="localiza-loading-panel mt-5 overflow-hidden rounded-[1.35rem] bg-[#FFF8EA]/90 p-4 shadow-[0_18px_52px_rgba(31,26,20,0.07),inset_0_0_0_1px_rgba(232,223,204,0.9)]"
+			aria-live="polite"
+		>
+			<div className="flex items-start gap-3">
+				<div
+					className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-[#FFFBF2] text-[#9C6137] shadow-[0_8px_24px_rgba(31,26,20,0.06),inset_0_0_0_1px_rgba(156,97,55,0.14)]"
+					aria-hidden="true"
+				>
+					<span className="localiza-loading-orb absolute h-2.5 w-2.5 rounded-full bg-[#9C6137]" />
+					<span className="localiza-loading-ring absolute h-2.5 w-2.5 rounded-full border border-[#9C6137]/35" />
 				</div>
-			</CardContent>
-		</Card>
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9C6137]">
+							Localiza está trabajando
+						</p>
+						<span
+							className="localiza-loading-dots inline-flex items-center gap-1"
+							aria-hidden="true"
+						>
+							<span />
+							<span />
+							<span />
+						</span>
+					</div>
+					<p
+						key={activeMessage.key}
+						className="localiza-loading-text mt-1 min-h-6 text-[15px] font-medium leading-6 text-[#1F1A14] [text-wrap:pretty]"
+					>
+						{activeMessage.text}
+					</p>
+					<div className="mt-3 space-y-2" aria-hidden="true">
+						<span className="localiza-loading-shimmer block h-2 rounded-full bg-[#E8DFCC]/70" />
+						<span className="localiza-loading-shimmer block h-2 w-8/12 rounded-full bg-[#E8DFCC]/55" />
+					</div>
+				</div>
+			</div>
+		</div>
 	);
 }
 
@@ -280,15 +377,25 @@ export default function LocalizaResolverClient({
 	availableLocalizaStrategies,
 	initialSourceUrl = "",
 }: LocalizaResolverClientProps) {
+	const candidateFieldId = useId();
+	const sourceUrlInputId = `${candidateFieldId}-source-url`;
 	const [sourceUrl, setSourceUrl] = useState(initialSourceUrl);
 	const [result, setResult] = useState<ResolveIdealistaLocationResult | null>(
+		null,
+	);
+	const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(
 		null,
 	);
 	const [error, setError] = useState<string | null>(null);
 	const hasTrackedLocalizaUrlPasteRef = useRef(false);
 	const requestSequenceRef = useRef(0);
+	const historyContainerRef = useRef<HTMLDivElement>(null);
 	const resolveIdealistaLocation =
 		trpc.listings.resolveIdealistaLocation.useMutation();
+	const [searchHistory, setSearchHistory] = useState<
+		LocalizaSearchHistoryEntry[]
+	>([]);
+	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 	const strategyOptions = useMemo(
 		() => buildLocalizaStrategyOptions(availableLocalizaStrategies),
 		[availableLocalizaStrategies],
@@ -298,31 +405,99 @@ export default function LocalizaResolverClient({
 		result?.resolvedAddressLabel ?? formatAddress(result?.prefillLocation);
 	const visibleResultCopy = result ? getResultCopy(result) : null;
 	const currentSourceUrl = result?.sourceMetadata.sourceUrl ?? sourceUrl.trim();
-	const [activeStageIndex, setActiveStageIndex] = useState(0);
+	const selectedCandidate =
+		result?.status === "needs_confirmation"
+			? (result.candidates.find(
+					(candidate) => candidate.id === selectedCandidateId,
+				) ?? null)
+			: null;
+	const createHref = result
+		? buildOnboardingHref(currentSourceUrl, selectedCandidate?.id)
+		: null;
+	const [activeLoadingMessageIndex, setActiveLoadingMessageIndex] = useState(0);
 	const effectiveStrategy =
 		getPreferredLocalizaStrategy("auto", availableLocalizaStrategies) ?? "auto";
 
 	useEffect(() => {
 		if (!resolveIdealistaLocation.isPending) {
-			setActiveStageIndex(0);
+			setActiveLoadingMessageIndex(0);
 			return;
 		}
 
-		setActiveStageIndex(0);
+		setActiveLoadingMessageIndex(0);
 		const intervalId = window.setInterval(() => {
-			setActiveStageIndex(
-				(currentIndex) => (currentIndex + 1) % resolverStages.length,
+			setActiveLoadingMessageIndex(
+				(currentIndex) => (currentIndex + 1) % loadingMessages.length,
 			);
-		}, RESOLVER_STAGE_INTERVAL_MS);
+		}, LOADING_MESSAGE_INTERVAL_MS);
 
 		return () => window.clearInterval(intervalId);
 	}, [resolveIdealistaLocation.isPending]);
+
+	useEffect(() => {
+		try {
+			setSearchHistory(
+				parseStoredSearchHistory(
+					window.localStorage.getItem(LOCALIZA_SEARCH_HISTORY_STORAGE_KEY),
+				),
+			);
+		} catch {
+			setSearchHistory([]);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (!isHistoryOpen) {
+			return;
+		}
+
+		const handlePointerDown = (event: PointerEvent) => {
+			if (
+				event.target instanceof Node &&
+				!historyContainerRef.current?.contains(event.target)
+			) {
+				setIsHistoryOpen(false);
+			}
+		};
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setIsHistoryOpen(false);
+			}
+		};
+
+		document.addEventListener("pointerdown", handlePointerDown);
+		document.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			document.removeEventListener("pointerdown", handlePointerDown);
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [isHistoryOpen]);
+
+	const rememberSearchHistoryEntry = (entry: LocalizaSearchHistoryEntry) => {
+		setSearchHistory((currentEntries) => {
+			const nextEntries = mergeSearchHistoryEntry(currentEntries, entry);
+
+			try {
+				window.localStorage.setItem(
+					LOCALIZA_SEARCH_HISTORY_STORAGE_KEY,
+					JSON.stringify(nextEntries),
+				);
+			} catch {
+				// If browser storage is unavailable, keep the in-memory history for this session.
+			}
+
+			return nextEntries;
+		});
+	};
 
 	const handleSourceUrlChange = (value: string) => {
 		requestSequenceRef.current += 1;
 		setSourceUrl(value);
 		setResult(null);
+		setSelectedCandidateId(null);
 		setError(null);
+		setIsHistoryOpen(false);
 
 		const trimmedValue = value.trim();
 
@@ -339,8 +514,8 @@ export default function LocalizaResolverClient({
 		}
 	};
 
-	const resolveLocation = async () => {
-		const trimmedSourceUrl = sourceUrl.trim();
+	const resolveLocation = async (sourceUrlOverride?: string) => {
+		const trimmedSourceUrl = (sourceUrlOverride ?? sourceUrl).trim();
 		const requestedStrategy = effectiveStrategy;
 
 		capturePosthogEvent("localiza_resolve_clicked", {
@@ -365,8 +540,11 @@ export default function LocalizaResolverClient({
 		requestSequenceRef.current = requestSequence;
 
 		try {
+			setSourceUrl(trimmedSourceUrl);
 			setError(null);
 			setResult(null);
+			setSelectedCandidateId(null);
+			rememberSearchHistoryEntry(buildPendingHistoryEntry(trimmedSourceUrl));
 			const resolved = await resolveIdealistaLocation.mutateAsync({
 				url: trimmedSourceUrl,
 				strategy: requestedStrategy,
@@ -377,15 +555,22 @@ export default function LocalizaResolverClient({
 			}
 
 			setResult(resolved);
+			setSelectedCandidateId(
+				resolved.status === "needs_confirmation"
+					? (resolved.candidates[0]?.id ?? null)
+					: null,
+			);
 			setSourceUrl(resolved.sourceMetadata.sourceUrl);
+			rememberSearchHistoryEntry(
+				buildResolvedHistoryEntry(resolved, trimmedSourceUrl),
+			);
 			capturePosthogEvent(
 				resolved.status === "unresolved"
 					? "localiza_resolve_unresolved"
 					: "localiza_resolve_success",
 				{
 					requestedStrategy: resolved.requestedStrategy,
-					actualAcquisitionMethod:
-						resolved.evidence.actualAcquisitionMethod,
+					actualAcquisitionMethod: resolved.evidence.actualAcquisitionMethod,
 					territoryAdapter: resolved.territoryAdapter,
 					status: resolved.status,
 					confidenceScore: resolved.confidenceScore,
@@ -411,16 +596,22 @@ export default function LocalizaResolverClient({
 					? unknownError.message
 					: "No hemos podido leer este anuncio.",
 			);
+			setSelectedCandidateId(null);
 		}
+	};
+
+	const retrieveHistoryEntry = (entry: LocalizaSearchHistoryEntry) => {
+		setIsHistoryOpen(false);
+		void resolveLocation(entry.sourceUrl);
 	};
 
 	return (
 		<main className="min-h-screen bg-background text-foreground">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 sm:px-8 sm:py-12">
-					<header className="flex flex-col gap-3">
-						<span className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-background px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-							Localiza
-						</span>
+				<header className="flex flex-col gap-3">
+					<span className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-background px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+						Localiza
+					</span>
 					<h1 className="font-serif text-[2.8rem] font-normal leading-tight sm:text-[4rem]">
 						Pega un enlace de Idealista.
 					</h1>
@@ -432,58 +623,123 @@ export default function LocalizaResolverClient({
 				</header>
 
 				<Card className="border-border/80 bg-background">
-						<CardHeader>
-							<CardTitle className="text-lg">Buscar dirección</CardTitle>
-							<CardDescription>
-								Pega un enlace completo de Idealista.
-							</CardDescription>
-						</CardHeader>
+					<CardHeader>
+						<CardTitle className="text-lg">Buscar dirección</CardTitle>
+						<CardDescription>
+							Pega un enlace completo de Idealista.
+						</CardDescription>
+					</CardHeader>
 					<CardContent>
 						<form
-							className="flex flex-col gap-3 sm:flex-row"
+							className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
 							onSubmit={(event) => {
 								event.preventDefault();
 								void resolveLocation();
 							}}
 						>
-							<label className="sr-only" htmlFor="localiza-source-url">
+							<label className="sr-only" htmlFor={sourceUrlInputId}>
 								URL del anuncio de Idealista
 							</label>
 							<Input
-								id="localiza-source-url"
+								id={sourceUrlInputId}
 								type="url"
 								value={sourceUrl}
 								onChange={(event) => handleSourceUrlChange(event.target.value)}
 								placeholder="https://www.idealista.com/inmueble/108926410/"
 								className="min-h-12 flex-1 text-base"
 							/>
-							<Button
-								type="submit"
-								className="min-h-12 px-5 transition-[background-color,color,transform] active:scale-[0.96]"
-								disabled={
-									resolveIdealistaLocation.isPending ||
-									!sourceUrl.trim() ||
-									!hasConfiguredStrategy
-								}
-							>
-								{resolveIdealistaLocation.isPending ? (
-									<LoaderCircle
-										className="mr-2 h-4 w-4 animate-spin"
-										aria-hidden="true"
-									/>
-								) : (
-									<Search className="mr-2 h-4 w-4" aria-hidden="true" />
-								)}
-								Buscar
-							</Button>
+							<div className="flex gap-3">
+								<div ref={historyContainerRef} className="relative">
+									<Button
+										type="button"
+										variant="outline"
+										aria-label="Ver búsquedas recientes"
+										aria-expanded={isHistoryOpen}
+										aria-haspopup="listbox"
+										className="min-h-12 w-12 rounded-[0.85rem] px-0 transition-[background-color,border-color,color,transform] active:scale-[0.96]"
+										onClick={() => setIsHistoryOpen((isOpen) => !isOpen)}
+									>
+										<History className="h-4 w-4" aria-hidden="true" />
+									</Button>
+
+									{isHistoryOpen ? (
+										<div className="absolute right-0 top-[calc(100%+0.55rem)] z-30 w-[min(22rem,calc(100vw-2.5rem))] overflow-hidden rounded-[1.1rem] bg-[#FFFBF2] shadow-[0_24px_80px_rgba(31,26,20,0.14),inset_0_0_0_1px_rgba(232,223,204,0.95)]">
+											<div className="flex items-center justify-between gap-3 border-b border-[#E8DFCC] px-4 py-3">
+												<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9C6137]">
+													Historial
+												</p>
+												<p className="text-right text-xs leading-5 text-[#6F5E4A]">
+													Últimas 10 búsquedas únicas.
+												</p>
+											</div>
+											{searchHistory.length > 0 ? (
+												<ul className="max-h-80 overflow-y-auto p-2">
+													{searchHistory.map((entry) => {
+														const entryLabel =
+															entry.resolvedAddressLabel ??
+															formatHistorySourceUrl(entry.sourceUrl);
+
+														return (
+															<li key={getHistoryUrlKey(entry.sourceUrl)}>
+																<button
+																	type="button"
+																	className="group flex w-full rounded-[0.9rem] px-3 py-2.5 text-left transition-[background-color,transform] duration-200 hover:bg-[#FFF8EA] active:scale-[0.96] disabled:pointer-events-none disabled:opacity-55"
+																	disabled={resolveIdealistaLocation.isPending}
+																	onClick={() => retrieveHistoryEntry(entry)}
+																>
+																	<span className="min-w-0 flex-1">
+																		<span className="block truncate text-sm font-medium text-[#1F1A14]">
+																			{entryLabel}
+																		</span>
+																		<span className="mt-0.5 block truncate text-xs leading-5 text-[#6F5E4A]">
+																			{formatHistorySourceUrl(entry.sourceUrl)}
+																		</span>
+																		<span className="mt-1 flex flex-wrap items-center gap-2 text-[11px] leading-4 text-[#6F5E4A]">
+																			<span>{formatHistoryDate(entry)}</span>
+																		</span>
+																	</span>
+																</button>
+															</li>
+														);
+													})}
+												</ul>
+											) : (
+												<p className="p-4 text-sm leading-6 text-[#6F5E4A]">
+													Todavía no hay búsquedas guardadas en este navegador.
+												</p>
+											)}
+										</div>
+									) : null}
+								</div>
+
+								<Button
+									type="submit"
+									className="min-h-12 flex-1 px-5 transition-[background-color,color,transform] active:scale-[0.96] sm:flex-none"
+									disabled={
+										resolveIdealistaLocation.isPending ||
+										!sourceUrl.trim() ||
+										!hasConfiguredStrategy
+									}
+								>
+									{resolveIdealistaLocation.isPending ? (
+										<LoaderCircle
+											className="mr-2 h-4 w-4 animate-spin"
+											aria-hidden="true"
+										/>
+									) : (
+										<Search className="mr-2 h-4 w-4" aria-hidden="true" />
+									)}
+									Buscar
+								</Button>
+							</div>
 						</form>
 
-							{!hasConfiguredStrategy ? (
-								<p className="mt-4 rounded-md border border-border/70 p-3 text-sm text-muted-foreground">
-									Localiza no está disponible ahora. Puedes crear el inmueble
-									manualmente.
-								</p>
-							) : null}
+						{!hasConfiguredStrategy ? (
+							<p className="mt-4 rounded-md border border-border/70 p-3 text-sm text-muted-foreground">
+								Localiza no está disponible ahora. Puedes crear el inmueble
+								manualmente.
+							</p>
+						) : null}
 
 						{error ? (
 							<div className="mt-4 flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -491,18 +747,20 @@ export default function LocalizaResolverClient({
 								<p>{error}</p>
 							</div>
 						) : null}
+
+						{resolveIdealistaLocation.isPending ? (
+							<LocalizaLoadingComposer
+								activeMessageIndex={activeLoadingMessageIndex}
+							/>
+						) : null}
 					</CardContent>
 				</Card>
 
-				{resolveIdealistaLocation.isPending ? (
-					<LocalizaProgressPanel
-						activeStageIndex={activeStageIndex}
-						sourceUrl={sourceUrl.trim()}
-					/>
-				) : null}
-
 				{result?.propertyDossier ? (
-					<LocalizaPropertyReport dossier={result.propertyDossier} result={result} />
+					<LocalizaPropertyReport
+						dossier={result.propertyDossier}
+						result={result}
+					/>
 				) : null}
 
 				{result ? (
@@ -527,7 +785,7 @@ export default function LocalizaResolverClient({
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							{resolvedAddress ? (
+							{resolvedAddress && result.status !== "needs_confirmation" ? (
 								<div className="flex items-start gap-3 rounded-md border border-border/70 p-3">
 									<MapPin
 										className="mt-0.5 h-4 w-4 text-primary"
@@ -546,31 +804,92 @@ export default function LocalizaResolverClient({
 
 							{result.status === "needs_confirmation" &&
 							result.candidates.length > 0 ? (
-								<div className="grid gap-2">
-									{result.candidates.map((candidate) => (
-										<div
-											key={candidate.id}
-											className="rounded-md border border-border/70 p-3 text-sm"
-										>
-												<p className="font-medium text-foreground">
-													{candidate.label}
-												</p>
-											</div>
-										))}
-									</div>
-								) : null}
+								<div className="space-y-3">
+									<p className="text-sm text-muted-foreground">
+										Selecciona la dirección oficial que corresponde al anuncio.
+									</p>
+									<fieldset className="grid gap-2">
+										<legend className="sr-only">
+											Direcciones oficiales posibles
+										</legend>
+										{result.candidates.map((candidate, index) => {
+											const isSelected = selectedCandidateId === candidate.id;
+											const candidateMeta = getCandidateMeta(candidate);
 
-								<div className="flex flex-wrap gap-3">
-								<Button
-									asChild
-									className="transition-[background-color,color,transform] active:scale-[0.96]"
-								>
-									<Link href={buildOnboardingHref(currentSourceUrl)}>
-										Crear inmueble
-										<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-									</Link>
-								</Button>
-								{result.officialSourceUrl ? (
+											return (
+												<label
+													key={candidate.id}
+													htmlFor={`${candidateFieldId}-candidate-${index}`}
+													className={`flex cursor-pointer items-start gap-3 rounded-[0.95rem] p-3 text-sm transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.985] ${
+														isSelected
+															? "bg-[#FFF8EA] shadow-[0_0_0_1px_rgba(156,97,55,0.35),0_14px_36px_rgba(31,26,20,0.07)]"
+															: "bg-background shadow-[inset_0_0_0_1px_rgba(232,223,204,0.95)] hover:bg-[#FFF8EA]/70"
+													}`}
+												>
+													<input
+														id={`${candidateFieldId}-candidate-${index}`}
+														type="radio"
+														name={`${candidateFieldId}-candidate`}
+														value={candidate.id}
+														checked={isSelected}
+														onChange={() =>
+															setSelectedCandidateId(candidate.id)
+														}
+														className="sr-only"
+													/>
+													<span
+														className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+															isSelected
+																? "bg-primary text-primary-foreground"
+																: "shadow-[inset_0_0_0_1px_rgba(156,97,55,0.35)]"
+														}`}
+														aria-hidden="true"
+													>
+														{isSelected ? (
+															<CheckCircle2 className="h-3.5 w-3.5" />
+														) : null}
+													</span>
+													<span className="min-w-0 flex-1">
+														<span className="block font-medium text-foreground">
+															{candidate.label}
+														</span>
+														{candidateMeta.length > 0 ? (
+															<span className="mt-1 block text-xs leading-5 text-muted-foreground">
+																{candidateMeta.join(" · ")}
+															</span>
+														) : null}
+													</span>
+												</label>
+											);
+										})}
+									</fieldset>
+								</div>
+							) : null}
+
+							{result.status === "needs_confirmation" &&
+							result.candidates.length === 0 ? (
+								<div className="rounded-md border border-border/70 p-3 text-sm text-muted-foreground">
+									No hay una opción oficial seleccionable. Crea el inmueble y
+									completa la dirección manualmente.
+								</div>
+							) : null}
+
+							<div className="flex flex-wrap gap-3">
+								{createHref ? (
+									<Button
+										asChild
+										className="transition-[background-color,color,transform] active:scale-[0.96]"
+									>
+										<Link href={createHref}>
+											{result.status === "needs_confirmation"
+												? "Crear inmueble con esta dirección"
+												: "Crear inmueble"}
+											<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+										</Link>
+									</Button>
+								) : null}
+								{result.officialSourceUrl &&
+								result.status !== "needs_confirmation" ? (
 									<Button
 										asChild
 										variant="outline"

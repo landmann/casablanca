@@ -525,13 +525,13 @@ Accessibility requirements:
 
 ### `/app/studio`
 
-This should stop pretending to be the operational surface.
+This has stopped pretending to be the operational surface.
 
-Short-term plan:
+Current state:
 
-- keep it as a preview if needed
-- add a clear route into the real inbox once `/app/inbox` exists
-- gradually retire placeholder queue content
+- `/app/studio` is retained only as a legacy redirect to `/app/inbox`
+- the real operating surface is `/app/inbox`
+- placeholder studio queue content is removed from active navigation
 
 ### onboarding
 
@@ -716,6 +716,7 @@ Implemented in the current slice:
 - Phase 2 is in place for development: current-agency resolution, default development bootstrap, and seeded inbox data now exist.
 - Phase 3 is in place: conversation list/detail/message queries plus manual conversation creation, takeover, reassignment, state-change, and internal-note mutations are live.
 - Phase 4 is in place: `/app/inbox` now renders real workflow records, transcript history, ownership, and queue actions instead of preview arrays.
+- The legacy `/app/studio` page now redirects to `/app/inbox`, so post-auth product traffic lands on the operational inbox rather than a preview.
 - Workflow authorization is now enforced inside Convex using Clerk-backed identity and active agency membership, and the server-side Convex client is request-scoped and authenticated.
 
 Now covered in this reviewed slice:
@@ -727,7 +728,7 @@ Now covered in this reviewed slice:
 
 Remaining gaps against the full plan:
 
-- rollout controls are still missing: there is no workflow-specific feature flag or per-agency rollout gate yet, and the existing env flags are unrelated to workflow rollout
+- workflow-specific rollout controls are still missing: app-level email allowlisting now gates testers, but there is still no per-agency workflow feature flag
 - observability remains partial: the workflow events listed in this document are still not instrumented end-to-end, and PostHog capture is currently only used in onboarding flows
 - verification remains incomplete: manual checks are done, but the recommended automated coverage for idempotent ingestion, ownership concurrency, and inbox UI smoke paths is still absent
 - repo-wide verification is not fully clean yet: the standalone `packages/api` `tsc --noEmit` path still has pre-existing Node/lib configuration debt outside this CRM slice
@@ -881,10 +882,11 @@ Rollout should be staged and reversible.
    - no live third-party ingestion
 2. Internal dogfooding
    - real `/app/inbox` replaces preview use for internal users
+   - `/app/studio` remains a redirect only
    - manual conversation handling only
 3. Design-partner beta
    - first live ingestion path enabled for selected agencies
-   - feature flag controls access by agency
+   - app-level allowlisting controls tester access until a per-agency workflow gate exists
    - daily review of failures, duplicates, and ownership confusion
 4. Wider rollout
    - expand access only after beta metrics are stable and handoff behavior is trusted

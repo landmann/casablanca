@@ -5,6 +5,7 @@ type OnboardingPageProps = {
 	searchParams?: Promise<{
 		step?: string;
 		sourceUrl?: string;
+		localizaCandidateId?: string;
 	}>;
 };
 
@@ -20,6 +21,9 @@ export default async function OnboardingPage({
 		<OnboardingFlow
 			initialStep={initialStep}
 			initialSourceUrl={resolvedSearchParams?.sourceUrl ?? ""}
+			initialLocalizaCandidateId={
+				resolvedSearchParams?.localizaCandidateId ?? ""
+			}
 			availableLocalizaStrategies={availableLocalizaStrategies}
 		/>
 	);

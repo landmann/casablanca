@@ -17,6 +17,7 @@ import type * as agencies from "../agencies.js";
 import type * as auth from "../auth.js";
 import type * as listings from "../listings.js";
 import type * as localizaGoldenLiveFixtures from "../localizaGoldenLiveFixtures.js";
+import type * as localizaMarketObservations from "../localizaMarketObservations.js";
 import type * as localizaMetrics from "../localizaMetrics.js";
 import type * as locationResolutionLease from "../locationResolutionLease.js";
 import type * as locationResolutions from "../locationResolutions.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   listings: typeof listings;
   localizaGoldenLiveFixtures: typeof localizaGoldenLiveFixtures;
+  localizaMarketObservations: typeof localizaMarketObservations;
   localizaMetrics: typeof localizaMetrics;
   locationResolutionLease: typeof locationResolutionLease;
   locationResolutions: typeof locationResolutions;

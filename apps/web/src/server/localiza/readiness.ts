@@ -14,6 +14,10 @@ import {
 	getLocalizaGoldenReadinessIssues,
 	localizaGoldenLiveFixtures as staticLocalizaGoldenLiveFixtures,
 } from "./golden-dataset";
+import {
+	isOportunistaPriceHistoryConfigured,
+	OPORTUNISTA_PRICE_HISTORY_REFRESH_MS,
+} from "./oportunista-price-history";
 
 type LocalizaLiveFixtureValidationStatus =
 	| "pending_official_validation"
@@ -140,8 +144,17 @@ export const getLocalizaReadinessSnapshot = async (input: {
 	const missingRequiredStrategies = LOCALIZA_BETA_AUTO_STRATEGY_ORDER.filter(
 		(strategy) => !configuredStrategies.includes(strategy),
 	).map((strategy) => `localiza_${strategy}_not_configured`);
+	const isMarketHistoryConfigured = isOportunistaPriceHistoryConfigured();
+	const marketHistoryIssues = isMarketHistoryConfigured
+		? []
+		: ["localiza_oportunista_not_configured"];
 	const blockers = Array.from(
-		new Set([...missingRequiredStrategies, ...goldenIssues, ...metrics.alerts]),
+		new Set([
+			...missingRequiredStrategies,
+			...marketHistoryIssues,
+			...goldenIssues,
+			...metrics.alerts,
+		]),
 	);
 
 	return {
@@ -151,6 +164,11 @@ export const getLocalizaReadinessSnapshot = async (input: {
 		blockers,
 		acquisitionContract:
 			getLocalizaBetaAcquisitionContract(configuredStrategies),
+		marketHistoryProvider: {
+			provider: "oportunista_rapidapi",
+			configured: isMarketHistoryConfigured,
+			refreshIntervalMs: OPORTUNISTA_PRICE_HISTORY_REFRESH_MS,
+		},
 		goldenDataset: {
 			summary: getLocalizaGoldenFrozenSummary(liveFixtures),
 			issues: goldenIssues,

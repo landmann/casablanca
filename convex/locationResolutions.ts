@@ -1,6 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireAuthenticatedUserId } from "./auth";
+import {
+	normalizeLocalizaMarketObservation,
+	requireLocalizaMarketObservationText as requireText,
+} from "./localizaMarketObservations";
 import { buildLocalizaMetricsSnapshot } from "./localizaMetrics";
 import { canCompleteLocationResolutionLease } from "./locationResolutionLease";
 
@@ -220,6 +224,265 @@ export const getBySourceUrl = query({
 	},
 });
 
+export const getPropertyHistoryByKey = query({
+	args: {
+		propertyHistoryKey: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		await requireAuthenticatedUserId(ctx);
+
+		const limit = Math.min(Math.max(args.limit ?? 50, 1), 100);
+		const records = await ctx.db
+			.query("locationResolutions")
+			.withIndex("by_property_history_key", (q) =>
+				q.eq("propertyHistoryKey", args.propertyHistoryKey),
+			)
+			.order("desc")
+			.take(limit);
+
+		return records
+			.map((record) => record.result?.propertyDossier)
+			.filter((dossier) => Boolean(dossier));
+	},
+});
+
+export const getMarketObservationsByKey = query({
+	args: {
+		propertyHistoryKey: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		await requireAuthenticatedUserId(ctx);
+
+		const propertyHistoryKey = requireText(
+			args.propertyHistoryKey,
+			"property_history_key",
+		);
+		const limit = Math.min(Math.max(args.limit ?? 100, 1), 250);
+		const records = await ctx.db
+			.query("localizaMarketObservations")
+			.withIndex("by_property_history_key", (q) =>
+				q.eq("propertyHistoryKey", propertyHistoryKey),
+			)
+			.order("desc")
+			.take(limit);
+
+		return records.map((record) => ({
+			_id: record._id,
+			propertyHistoryKey: record.propertyHistoryKey,
+			portal: record.portal,
+			observedAt: record.observedAt,
+			askingPrice: record.askingPrice,
+			currencyCode: record.currencyCode,
+			advertiserName: record.advertiserName,
+			agencyName: record.agencyName,
+			sourceUrl: record.sourceUrl,
+			daysPublished: record.daysPublished,
+			firstSeenAt: record.firstSeenAt,
+			lastSeenAt: record.lastSeenAt,
+			provenanceLabel: record.provenanceLabel,
+			provenanceUrl: record.provenanceUrl,
+			sourceRecordId: record.sourceRecordId,
+			createdAt: record.createdAt,
+			updatedAt: record.updatedAt,
+		}));
+	},
+});
+
+export const listRecentMarketObservations = query({
+	args: {
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		await requireAuthenticatedUserId(ctx);
+
+		const limit = Math.min(Math.max(args.limit ?? 10, 1), 50);
+		const records = await ctx.db
+			.query("localizaMarketObservations")
+			.order("desc")
+			.take(limit);
+
+		return records.map((record) => ({
+			_id: record._id,
+			propertyHistoryKey: record.propertyHistoryKey,
+			portal: record.portal,
+			observedAt: record.observedAt,
+			askingPrice: record.askingPrice,
+			currencyCode: record.currencyCode,
+			advertiserName: record.advertiserName,
+			agencyName: record.agencyName,
+			sourceUrl: record.sourceUrl,
+			daysPublished: record.daysPublished,
+			provenanceLabel: record.provenanceLabel,
+			createdAt: record.createdAt,
+			updatedAt: record.updatedAt,
+		}));
+	},
+});
+
+export const listRecentPropertyHistoryKeys = query({
+	args: {
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		await requireAuthenticatedUserId(ctx);
+
+		const limit = Math.min(Math.max(args.limit ?? 12, 1), 50);
+		const records = await ctx.db
+			.query("locationResolutions")
+			.order("desc")
+			.take(250);
+		const keysByValue = new Map<
+			string,
+			{
+				propertyHistoryKey: string;
+				label?: string;
+				unitRef20?: string;
+				parcelRef14?: string;
+				sourceUrl: string;
+				resolverVersion: string;
+				updatedAt: number;
+			}
+		>();
+
+		for (const record of records) {
+			if (!record.propertyHistoryKey || keysByValue.has(record.propertyHistoryKey)) {
+				continue;
+			}
+
+			keysByValue.set(record.propertyHistoryKey, {
+				propertyHistoryKey: record.propertyHistoryKey,
+				label:
+					record.result?.propertyDossier?.officialIdentity.proposedAddressLabel ??
+					record.result?.resolvedAddressLabel,
+				unitRef20: record.result?.propertyDossier?.officialIdentity.unitRef20,
+				parcelRef14: record.result?.propertyDossier?.officialIdentity.parcelRef14,
+				sourceUrl: record.sourceUrl,
+				resolverVersion: record.resolverVersion,
+				updatedAt: record.updatedAt,
+			});
+
+			if (keysByValue.size >= limit) {
+				break;
+			}
+		}
+
+		return Array.from(keysByValue.values());
+	},
+});
+
+const localizaMarketObservationInputValidator = {
+	propertyHistoryKey: v.string(),
+	portal: v.string(),
+	observedAt: v.string(),
+	askingPrice: v.optional(v.number()),
+	currencyCode: v.optional(v.literal("EUR")),
+	advertiserName: v.optional(v.string()),
+	agencyName: v.optional(v.string()),
+	sourceUrl: v.optional(v.string()),
+	daysPublished: v.optional(v.number()),
+	firstSeenAt: v.optional(v.string()),
+	lastSeenAt: v.optional(v.string()),
+	provenanceLabel: v.string(),
+	provenanceUrl: v.optional(v.string()),
+	sourceRecordId: v.optional(v.string()),
+};
+
+export const upsertMarketObservation = mutation({
+	args: {
+		...localizaMarketObservationInputValidator,
+		now: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await requireAuthenticatedUserId(ctx);
+		const now = args.now ?? Date.now();
+		const normalizedObservation = normalizeLocalizaMarketObservation(args);
+		const existing = await ctx.db
+			.query("localizaMarketObservations")
+			.withIndex("by_observation_key", (q) =>
+				q.eq("observationKey", normalizedObservation.observationKey),
+			)
+			.first();
+		const record = {
+			...normalizedObservation,
+			updatedAt: now,
+		};
+
+		if (existing) {
+			await ctx.db.patch(existing._id, record);
+			return { id: existing._id, created: false };
+		}
+
+		const id = await ctx.db.insert("localizaMarketObservations", {
+			...record,
+			createdByUserId: userId,
+			createdAt: now,
+		});
+
+		return { id, created: true };
+	},
+});
+
+export const upsertMarketObservations = mutation({
+	args: {
+		observations: v.array(v.object(localizaMarketObservationInputValidator)),
+		now: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await requireAuthenticatedUserId(ctx);
+		const now = args.now ?? Date.now();
+		const normalizedByKey = new Map<
+			string,
+			ReturnType<typeof normalizeLocalizaMarketObservation>
+		>();
+
+		for (const observation of args.observations.slice(0, 100)) {
+			const normalizedObservation =
+				normalizeLocalizaMarketObservation(observation);
+			normalizedByKey.set(
+				normalizedObservation.observationKey,
+				normalizedObservation,
+			);
+		}
+
+		let created = 0;
+		let updated = 0;
+
+		for (const normalizedObservation of normalizedByKey.values()) {
+			const existing = await ctx.db
+				.query("localizaMarketObservations")
+				.withIndex("by_observation_key", (q) =>
+					q.eq("observationKey", normalizedObservation.observationKey),
+				)
+				.first();
+			const record = {
+				...normalizedObservation,
+				updatedAt: now,
+			};
+
+			if (existing) {
+				await ctx.db.patch(existing._id, record);
+				updated += 1;
+				continue;
+			}
+
+			await ctx.db.insert("localizaMarketObservations", {
+				...record,
+				createdByUserId: userId,
+				createdAt: now,
+			});
+			created += 1;
+		}
+
+		return {
+			created,
+			updated,
+			total: created + updated,
+		};
+	},
+});
+
 export const claimLease = mutation({
 	args: {
 		...lookupArgsValidator,
@@ -312,6 +575,7 @@ export const complete = mutation({
 		leaseOwner: v.string(),
 		result: resolveIdealistaLocationResultValidator,
 		normalizedSignals: v.optional(v.any()),
+		propertyHistoryKey: v.optional(v.string()),
 		expiresAt: v.number(),
 		now: v.number(),
 		errorCode: v.optional(v.string()),
@@ -342,6 +606,7 @@ export const complete = mutation({
 		const patch = {
 			sourceUrl: args.sourceUrl,
 			resultStatus: args.result.status,
+			propertyHistoryKey: args.propertyHistoryKey,
 			result: args.result,
 			normalizedSignals: args.normalizedSignals,
 			leaseOwner: undefined,

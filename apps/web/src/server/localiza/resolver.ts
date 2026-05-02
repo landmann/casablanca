@@ -12,6 +12,11 @@ import { resolveStateCatastro } from "./catastro-state";
 import { firecrawlAdapter } from "./firecrawl-adapter";
 import { idealistaApiAdapter } from "./idealista-adapter";
 import { verifyIdealistaMaps } from "./maps-verifier";
+import {
+	fetchOportunistaPriceHistory,
+	isOportunistaPriceHistoryConfigured,
+	OPORTUNISTA_PRICE_HISTORY_REFRESH_MS,
+} from "./oportunista-price-history";
 import type {
 	LocalizaAdapter,
 	LocalizaAdapterMethod,
@@ -81,6 +86,7 @@ const completeLocationResolutionRef = makeFunctionReference<
 		leaseOwner: string;
 		result: ResolveIdealistaLocationResult;
 		normalizedSignals?: IdealistaSignals;
+		propertyHistoryKey?: string;
 		expiresAt: number;
 		now: number;
 		errorCode?: string;
@@ -88,6 +94,68 @@ const completeLocationResolutionRef = makeFunctionReference<
 	},
 	{ id: string }
 >("locationResolutions:complete");
+
+const getPropertyHistoryByKeyRef = makeFunctionReference<
+	"query",
+	{
+		propertyHistoryKey: string;
+		limit?: number;
+	},
+	LocalizaPropertyDossier[]
+>("locationResolutions:getPropertyHistoryByKey");
+
+type LocalizaMarketObservation = {
+	_id: string;
+	propertyHistoryKey: string;
+	portal: string;
+	observedAt: string;
+	askingPrice?: number;
+	currencyCode?: "EUR";
+	advertiserName?: string;
+	agencyName?: string;
+	sourceUrl?: string;
+	daysPublished?: number;
+	firstSeenAt?: string;
+	lastSeenAt?: string;
+	provenanceLabel: string;
+	provenanceUrl?: string;
+	sourceRecordId?: string;
+	createdAt: number;
+	updatedAt: number;
+};
+
+const getMarketObservationsByKeyRef = makeFunctionReference<
+	"query",
+	{
+		propertyHistoryKey: string;
+		limit?: number;
+	},
+	LocalizaMarketObservation[]
+>("locationResolutions:getMarketObservationsByKey");
+
+const upsertMarketObservationsRef = makeFunctionReference<
+	"mutation",
+	{
+		observations: Array<{
+			propertyHistoryKey: string;
+			portal: string;
+			observedAt: string;
+			askingPrice?: number;
+			currencyCode?: "EUR";
+			advertiserName?: string;
+			agencyName?: string;
+			sourceUrl?: string;
+			daysPublished?: number;
+			firstSeenAt?: string;
+			lastSeenAt?: string;
+			provenanceLabel: string;
+			provenanceUrl?: string;
+			sourceRecordId?: string;
+		}>;
+		now?: number;
+	},
+	{ created: number; updated: number; total: number }
+>("locationResolutions:upsertMarketObservations");
 
 const sleep = (ms: number) =>
 	new Promise<void>((resolve) => {
@@ -398,10 +466,10 @@ const buildPropertyDossier = (input: {
 		input.prefillLocation,
 	);
 	const observedAt = input.signals.acquiredAt || input.resolvedAt;
-	const daysPublished = Math.max(
-		1,
-		Math.round(input.signals.daysPublished ?? 1),
-	);
+	const daysPublished =
+		input.signals.daysPublished !== undefined
+			? Math.max(1, Math.round(input.signals.daysPublished))
+			: undefined;
 	const publicHistory = [
 		{
 			observedAt,
@@ -426,11 +494,13 @@ const buildPropertyDossier = (input: {
 			return;
 		}
 		durationLabels.add(`${kind}:${normalizedLabel}`);
-		publicationDurations.push({
-			label: normalizedLabel,
-			kind,
-			daysPublished,
-		});
+		if (daysPublished !== undefined && daysPublished > 1) {
+			publicationDurations.push({
+				label: normalizedLabel,
+				kind,
+				daysPublished,
+			});
+		}
 	};
 
 	addDuration(input.signals.advertiserName, "advertiser");
@@ -486,6 +556,472 @@ const buildPropertyDossier = (input: {
 			)}`,
 		},
 	};
+};
+
+type LocalizaPublicHistoryRow =
+	LocalizaPropertyDossier["publicHistory"][number];
+type LocalizaDuplicateRecord =
+	LocalizaPropertyDossier["duplicateGroup"]["records"][number];
+type LocalizaPublicationDuration =
+	LocalizaPropertyDossier["publicationDurations"][number];
+
+const normalizePropertyHistoryKeyPart = (value?: string) =>
+	cleanDossierText(value)
+		?.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/(^-|-$)/g, "");
+
+const normalizeHistoryUrlKey = (sourceUrl?: string) => {
+	if (!sourceUrl) {
+		return undefined;
+	}
+
+	try {
+		const parsedUrl = new URL(sourceUrl);
+		parsedUrl.hash = "";
+		parsedUrl.hostname = parsedUrl.hostname.toLowerCase();
+		parsedUrl.pathname = parsedUrl.pathname.replace(/\/+$/, "") || "/";
+
+		return parsedUrl.toString().replace(/\/$/, "").toLowerCase();
+	} catch {
+		return sourceUrl.trim().replace(/\/+$/, "").toLowerCase();
+	}
+};
+
+const getPropertyHistoryKey = (result: ResolveIdealistaLocationResult) => {
+	const identity = result.propertyDossier?.officialIdentity;
+
+	if (!identity) {
+		return undefined;
+	}
+
+	if (identity.unitRef20) {
+		return `unit:${identity.unitRef20.toUpperCase()}`;
+	}
+
+	if (identity.parcelRef14) {
+		return `parcel:${identity.parcelRef14.toUpperCase()}`;
+	}
+
+	if (result.status === "needs_confirmation") {
+		return undefined;
+	}
+
+	const addressKey = [
+		identity.street,
+		identity.number,
+		identity.postalCode,
+		identity.municipality,
+		identity.province,
+	]
+		.map(normalizePropertyHistoryKeyPart)
+		.filter(Boolean)
+		.join("|");
+
+	return addressKey ? `address:${addressKey}` : undefined;
+};
+
+const getListingMarketHistoryKey = (context: LocalizaResolutionContext) =>
+	`listing:idealista:${context.sourceMetadata.externalListingId}`;
+
+const parseHistoryDate = (value?: string) => {
+	const timestamp = Date.parse(value ?? "");
+	return Number.isFinite(timestamp) ? timestamp : undefined;
+};
+
+const getInclusiveDays = (start?: string, end?: string) => {
+	const startTimestamp = parseHistoryDate(start);
+	const endTimestamp = parseHistoryDate(end);
+
+	if (startTimestamp === undefined || endTimestamp === undefined) {
+		return undefined;
+	}
+
+	return Math.max(
+		1,
+		Math.round((endTimestamp - startTimestamp) / (24 * 60 * 60 * 1000)) + 1,
+	);
+};
+
+const getHistoryRowKey = (row: LocalizaPublicHistoryRow) =>
+	[
+		row.portal.toUpperCase(),
+		normalizeHistoryUrlKey(row.sourceUrl) ?? "no-url",
+		row.observedAt,
+		row.askingPrice ?? "no-price",
+		cleanDossierText(row.agencyName ?? row.advertiserName) ?? "no-party",
+	].join("|");
+
+const buildHistoryRowsFromMarketObservations = (
+	observations: LocalizaMarketObservation[],
+): LocalizaPublicHistoryRow[] =>
+	observations.map((observation) => ({
+		observedAt: observation.observedAt,
+		askingPrice: observation.askingPrice,
+		currencyCode: observation.currencyCode,
+		portal: observation.portal.toUpperCase(),
+		advertiserName: observation.advertiserName,
+		agencyName: observation.agencyName,
+		sourceUrl: observation.sourceUrl ?? observation.provenanceUrl,
+		daysPublished: observation.daysPublished,
+	}));
+
+const buildDuplicateRecordsFromMarketObservations = (
+	observations: LocalizaMarketObservation[],
+): LocalizaDuplicateRecord[] =>
+	observations.map((observation) => ({
+		portal: observation.portal.toUpperCase(),
+		sourceUrl: observation.sourceUrl ?? observation.provenanceUrl,
+		advertiserName: observation.advertiserName,
+		agencyName: observation.agencyName,
+		firstSeenAt: observation.firstSeenAt ?? observation.observedAt,
+		lastSeenAt:
+			observation.lastSeenAt ?? observation.firstSeenAt ?? observation.observedAt,
+		askingPrice: observation.askingPrice,
+	}));
+
+const mergePublicHistoryRows = (
+	dossiers: LocalizaPropertyDossier[],
+	extraRows: LocalizaPublicHistoryRow[] = [],
+): LocalizaPublicHistoryRow[] => {
+	const rowsByKey = new Map<string, LocalizaPublicHistoryRow>();
+
+	for (const row of [
+		...dossiers.flatMap((dossier) => dossier.publicHistory),
+		...extraRows,
+	]) {
+		if (!row.observedAt || !Number.isFinite(Date.parse(row.observedAt))) {
+			continue;
+		}
+
+		rowsByKey.set(getHistoryRowKey(row), row);
+	}
+
+	return Array.from(rowsByKey.values())
+		.sort(
+			(left, right) =>
+				new Date(right.observedAt).getTime() -
+				new Date(left.observedAt).getTime(),
+		)
+		.slice(0, 40);
+};
+
+const getDuplicateRecordKey = (record: LocalizaDuplicateRecord) =>
+	[
+		record.portal.toUpperCase(),
+		normalizeHistoryUrlKey(record.sourceUrl) ??
+			cleanDossierText(record.agencyName ?? record.advertiserName) ??
+			"no-source",
+	].join("|");
+
+const mergeDuplicateRecords = (
+	history: LocalizaPublicHistoryRow[],
+	dossiers: LocalizaPropertyDossier[],
+	extraRecords: LocalizaDuplicateRecord[] = [],
+): LocalizaDuplicateRecord[] => {
+	const recordsByKey = new Map<string, LocalizaDuplicateRecord>();
+	const addRecord = (record: LocalizaDuplicateRecord) => {
+		const key = getDuplicateRecordKey(record);
+		const existing = recordsByKey.get(key);
+
+		if (!existing) {
+			recordsByKey.set(key, record);
+			return;
+		}
+
+		const firstSeenAt =
+			(parseHistoryDate(record.firstSeenAt) ?? Number.POSITIVE_INFINITY) <
+			(parseHistoryDate(existing.firstSeenAt) ?? Number.POSITIVE_INFINITY)
+				? record.firstSeenAt
+				: existing.firstSeenAt;
+		const lastSeenAt =
+			(parseHistoryDate(record.lastSeenAt) ?? 0) >
+			(parseHistoryDate(existing.lastSeenAt) ?? 0)
+				? record.lastSeenAt
+				: existing.lastSeenAt;
+		const askingPrice =
+			lastSeenAt === record.lastSeenAt
+				? (record.askingPrice ?? existing.askingPrice)
+				: existing.askingPrice;
+
+		recordsByKey.set(key, {
+			...existing,
+			...record,
+			firstSeenAt,
+			lastSeenAt,
+			askingPrice,
+		});
+	};
+
+	for (const record of dossiers.flatMap(
+		(dossier) => dossier.duplicateGroup.records,
+	)) {
+		addRecord(record);
+	}
+
+	for (const record of extraRecords) {
+		addRecord(record);
+	}
+
+	for (const row of history) {
+		addRecord({
+			portal: row.portal,
+			sourceUrl: row.sourceUrl,
+			advertiserName: row.advertiserName,
+			agencyName: row.agencyName,
+			firstSeenAt: row.observedAt,
+			lastSeenAt: row.observedAt,
+			askingPrice: row.askingPrice,
+		});
+	}
+
+	return Array.from(recordsByKey.values())
+		.sort(
+			(left, right) =>
+				(parseHistoryDate(right.lastSeenAt) ?? 0) -
+				(parseHistoryDate(left.lastSeenAt) ?? 0),
+		)
+		.slice(0, 25);
+};
+
+const buildPublicationDurationsFromHistory = (
+	history: LocalizaPublicHistoryRow[],
+	duplicates: LocalizaDuplicateRecord[],
+	dossiers: LocalizaPropertyDossier[],
+): LocalizaPublicationDuration[] => {
+	const durationsByKey = new Map<string, LocalizaPublicationDuration>();
+	const addDuration = (
+		label: string | undefined,
+		kind: LocalizaPublicationDuration["kind"],
+		daysPublished: number | undefined,
+	) => {
+		const normalizedLabel = cleanDossierText(label);
+
+		if (!normalizedLabel || daysPublished === undefined || daysPublished <= 1) {
+			return;
+		}
+
+		const key = `${kind}:${normalizedLabel.toUpperCase()}`;
+		const existing = durationsByKey.get(key);
+
+		if (!existing || daysPublished > existing.daysPublished) {
+			durationsByKey.set(key, {
+				label: normalizedLabel,
+				kind,
+				daysPublished,
+			});
+		}
+	};
+
+	for (const dossier of dossiers) {
+		for (const duration of dossier.publicationDurations) {
+			addDuration(duration.label, duration.kind, duration.daysPublished);
+		}
+	}
+
+	for (const row of history) {
+		addDuration(row.portal, "portal", row.daysPublished);
+		addDuration(row.agencyName, "agency", row.daysPublished);
+		addDuration(row.advertiserName, "advertiser", row.daysPublished);
+	}
+
+	for (const duplicate of duplicates) {
+		const daysPublished = getInclusiveDays(
+			duplicate.firstSeenAt,
+			duplicate.lastSeenAt,
+		);
+		addDuration(duplicate.portal, "portal", daysPublished);
+		addDuration(duplicate.agencyName, "agency", daysPublished);
+		addDuration(duplicate.advertiserName, "advertiser", daysPublished);
+	}
+
+	return Array.from(durationsByKey.values())
+		.sort((left, right) => right.daysPublished - left.daysPublished)
+		.slice(0, 12);
+};
+
+const mergeDossierWithPropertyHistory = (
+	dossier: LocalizaPropertyDossier,
+	historyDossiers: LocalizaPropertyDossier[],
+	marketObservations: LocalizaMarketObservation[] = [],
+): LocalizaPropertyDossier => {
+	const allDossiers = [dossier, ...historyDossiers];
+	const marketHistoryRows =
+		buildHistoryRowsFromMarketObservations(marketObservations);
+	const marketDuplicateRecords =
+		buildDuplicateRecordsFromMarketObservations(marketObservations);
+	const publicHistory = mergePublicHistoryRows(allDossiers, marketHistoryRows);
+	const duplicateRecords = mergeDuplicateRecords(
+		publicHistory,
+		allDossiers,
+		marketDuplicateRecords,
+	);
+	const publicationDurations = buildPublicationDurationsFromHistory(
+		publicHistory,
+		duplicateRecords,
+		allDossiers,
+	);
+
+	return {
+		...dossier,
+		publicHistory,
+		duplicateGroup: {
+			count: duplicateRecords.length,
+			records: duplicateRecords,
+		},
+		publicationDurations,
+	};
+};
+
+const hasFreshOportunistaHistory = (input: {
+	observations: LocalizaMarketObservation[];
+	listingId: string;
+	now: number;
+}) => {
+	const sourceRecordPrefix = `oportunista:${input.listingId}:`;
+	const latestUpdateAt = input.observations
+		.filter((observation) =>
+			observation.sourceRecordId?.startsWith(sourceRecordPrefix),
+		)
+		.reduce(
+			(latest, observation) => Math.max(latest, observation.updatedAt),
+			0,
+		);
+
+	return (
+		latestUpdateAt > 0 &&
+		input.now - latestUpdateAt < OPORTUNISTA_PRICE_HISTORY_REFRESH_MS
+	);
+};
+
+const refreshOportunistaMarketHistory = async (input: {
+	convex: ConvexHttpClient;
+	context: LocalizaResolutionContext;
+	marketHistoryKey: string;
+	observations: LocalizaMarketObservation[];
+}) => {
+	if (!isOportunistaPriceHistoryConfigured()) {
+		return input.observations;
+	}
+
+	const now = Date.now();
+
+	if (
+		hasFreshOportunistaHistory({
+			observations: input.observations,
+			listingId: input.context.sourceMetadata.externalListingId,
+			now,
+		})
+	) {
+		return input.observations;
+	}
+
+	try {
+		const importedObservations = await fetchOportunistaPriceHistory({
+			listingId: input.context.sourceMetadata.externalListingId,
+			sourceUrl: input.context.sourceMetadata.sourceUrl,
+		});
+
+		if (importedObservations.length === 0) {
+			return input.observations;
+		}
+
+		const importResult = await input.convex.mutation(
+			upsertMarketObservationsRef,
+			{
+				observations: importedObservations.map((observation) => ({
+					...observation,
+					propertyHistoryKey: input.marketHistoryKey,
+				})),
+				now,
+			},
+		);
+
+		logLocalizaEvent("info", "localiza.resolve.oportunista_history_imported", {
+			...buildResolverLogPayload(input.context),
+			marketHistoryKey: input.marketHistoryKey,
+			created: importResult.created,
+			updated: importResult.updated,
+			total: importResult.total,
+		});
+
+		return await input.convex.query(getMarketObservationsByKeyRef, {
+			propertyHistoryKey: input.marketHistoryKey,
+			limit: 160,
+		});
+	} catch (error) {
+		logLocalizaEvent("warn", "localiza.resolve.oportunista_history_failed", {
+			...buildResolverLogPayload(input.context),
+			marketHistoryKey: input.marketHistoryKey,
+			errorMessage: getErrorMessage(error),
+		});
+
+		return input.observations;
+	}
+};
+
+const attachPropertyHistoryToResult = async (input: {
+	convex: ConvexHttpClient;
+	context: LocalizaResolutionContext;
+	result: ResolveIdealistaLocationResult;
+}) => {
+	const propertyHistoryKey = getPropertyHistoryKey(input.result);
+	const marketHistoryKey =
+		propertyHistoryKey ?? getListingMarketHistoryKey(input.context);
+
+	if (!input.result.propertyDossier) {
+		return {
+			result: input.result,
+			propertyHistoryKey,
+		};
+	}
+
+	try {
+		const [historyDossiers, existingMarketObservations] = await Promise.all([
+			propertyHistoryKey
+				? input.convex.query(getPropertyHistoryByKeyRef, {
+						propertyHistoryKey,
+						limit: 50,
+					})
+				: Promise.resolve([]),
+			input.convex.query(getMarketObservationsByKeyRef, {
+				propertyHistoryKey: marketHistoryKey,
+				limit: 100,
+			}),
+		]);
+		const marketObservations = await refreshOportunistaMarketHistory({
+			convex: input.convex,
+			context: input.context,
+			marketHistoryKey,
+			observations: existingMarketObservations,
+		});
+
+		return {
+			result: {
+				...input.result,
+				propertyDossier: mergeDossierWithPropertyHistory(
+					input.result.propertyDossier,
+					historyDossiers,
+					marketObservations,
+				),
+			},
+			propertyHistoryKey,
+		};
+	} catch (error) {
+		logLocalizaEvent("warn", "localiza.resolve.property_history_failed", {
+			...buildResolverLogPayload(input.context),
+			propertyHistoryKey,
+			marketHistoryKey,
+			errorMessage: getErrorMessage(error),
+		});
+
+		return {
+			result: input.result,
+			propertyHistoryKey,
+		};
+	}
 };
 
 const buildUnresolvedResult = (input: {
@@ -709,12 +1245,63 @@ const loadCachedRecord = async (
 		resolverVersion: context.resolverVersion,
 	});
 
+const loadCachedRecordSafely = async (
+	convex: ConvexHttpClient,
+	context: LocalizaResolutionContext,
+) => {
+	try {
+		return {
+			cacheAvailable: true,
+			record: await loadCachedRecord(convex, context),
+		};
+	} catch (error) {
+		logLocalizaEvent("warn", "localiza.resolve.cache_read_failed", {
+			...buildResolverLogPayload(context),
+			errorMessage: getErrorMessage(error),
+		});
+
+		return {
+			cacheAvailable: false,
+			record: null,
+		};
+	}
+};
+
+const claimLeaseSafely = async (input: {
+	convex: ConvexHttpClient;
+	context: LocalizaResolutionContext;
+	leaseOwner: string;
+	now: number;
+}) => {
+	try {
+		return await input.convex.mutation(claimLocationResolutionLeaseRef, {
+			provider: input.context.sourceMetadata.provider,
+			externalListingId: input.context.sourceMetadata.externalListingId,
+			sourceUrl: input.context.sourceMetadata.sourceUrl,
+			requestedStrategy: input.context.requestedStrategy,
+			resolverVersion: input.context.resolverVersion,
+			leaseOwner: input.leaseOwner,
+			leaseDurationMs: LEASE_DURATION_MS,
+			defaultExpiresAt: input.now + UNRESOLVED_CACHE_TTL_MS,
+			now: input.now,
+		});
+	} catch (error) {
+		logLocalizaEvent("warn", "localiza.resolve.cache_lease_failed", {
+			...buildResolverLogPayload(input.context),
+			errorMessage: getErrorMessage(error),
+		});
+
+		return null;
+	}
+};
+
 const persistResult = async (input: {
 	convex: ConvexHttpClient;
 	context: LocalizaResolutionContext;
 	leaseOwner: string;
 	result: ResolveIdealistaLocationResult;
 	normalizedSignals?: IdealistaSignals;
+	propertyHistoryKey?: string;
 	now: number;
 	expiresAt: number;
 	errorCode?: string;
@@ -731,6 +1318,8 @@ const persistResult = async (input: {
 		leaseOwner: input.leaseOwner,
 		result: resultWithCache,
 		normalizedSignals: input.normalizedSignals,
+		propertyHistoryKey:
+			input.propertyHistoryKey ?? getPropertyHistoryKey(resultWithCache),
 		expiresAt: input.expiresAt,
 		now: input.now,
 		errorCode: input.errorCode,
@@ -740,16 +1329,66 @@ const persistResult = async (input: {
 	return resultWithCache;
 };
 
+const persistResultSafely = async (input: {
+	convex: ConvexHttpClient;
+	context: LocalizaResolutionContext;
+	leaseOwner: string | null;
+	result: ResolveIdealistaLocationResult;
+	normalizedSignals?: IdealistaSignals;
+	propertyHistoryKey?: string;
+	now: number;
+	expiresAt: number;
+	errorCode?: string;
+	errorMessage?: string;
+}) => {
+	if (!input.leaseOwner) {
+		return input.result;
+	}
+
+	try {
+		return await persistResult({
+			...input,
+			leaseOwner: input.leaseOwner,
+		});
+	} catch (error) {
+		logLocalizaEvent("warn", "localiza.resolve.cache_write_failed", {
+			...buildResolverLogPayload(input.context),
+			errorMessage: getErrorMessage(error),
+		});
+
+		return input.result;
+	}
+};
+
 const waitForInFlightResolution = async (input: {
 	convex: ConvexHttpClient;
 	context: LocalizaResolutionContext;
 	deadlineAt: number;
 }) => {
 	while (Date.now() < input.deadlineAt) {
-		const cachedRecord = await loadCachedRecord(input.convex, input.context);
+		const cachedRecordResult = await loadCachedRecordSafely(
+			input.convex,
+			input.context,
+		);
+
+		if (!cachedRecordResult.cacheAvailable) {
+			return null;
+		}
+
+		const cachedRecord = cachedRecordResult.record;
 
 		if (isFreshCachedResult(cachedRecord, Date.now())) {
-			return attachCacheExpiry(cachedRecord.result, cachedRecord.expiresAt);
+			const cachedResult = attachCacheExpiry(
+				cachedRecord.result,
+				cachedRecord.expiresAt,
+			);
+			const historyResult = await attachPropertyHistoryToResult({
+				convex: input.convex,
+				context: input.context,
+				result: cachedResult,
+			});
+
+			return historyResult.result;
 		}
 
 		await sleep(IN_FLIGHT_POLL_INTERVAL_MS);
@@ -1027,7 +1666,8 @@ export const resolveIdealistaLocation = async (input: {
 		...buildResolverLogPayload(context),
 	});
 
-	const cachedRecord = await loadCachedRecord(input.convex, context);
+	const cachedRecordResult = await loadCachedRecordSafely(input.convex, context);
+	const cachedRecord = cachedRecordResult.record;
 
 	if (isFreshCachedResult(cachedRecord, now)) {
 		logLocalizaEvent("info", "localiza.resolve.cache_hit", {
@@ -1038,27 +1678,37 @@ export const resolveIdealistaLocation = async (input: {
 			territoryAdapter: cachedRecord.result.territoryAdapter,
 			durationMs: Date.now() - startedAt,
 		});
-		return attachCacheExpiry(cachedRecord.result, cachedRecord.expiresAt);
+		const cachedResult = attachCacheExpiry(
+			cachedRecord.result,
+			cachedRecord.expiresAt,
+		);
+		const historyResult = await attachPropertyHistoryToResult({
+			convex: input.convex,
+			context,
+			result: cachedResult,
+		});
+
+		return historyResult.result;
 	}
 
-	const leaseOwner = crypto.randomUUID();
-	const leaseResult = await input.convex.mutation(
-		claimLocationResolutionLeaseRef,
-		{
-			provider: context.sourceMetadata.provider,
-			externalListingId: context.sourceMetadata.externalListingId,
-			sourceUrl: context.sourceMetadata.sourceUrl,
-			requestedStrategy: context.requestedStrategy,
-			resolverVersion: context.resolverVersion,
-			leaseOwner,
-			leaseDurationMs: LEASE_DURATION_MS,
-			defaultExpiresAt: now + UNRESOLVED_CACHE_TTL_MS,
-			now,
-		},
-	);
+	const leaseOwner = cachedRecordResult.cacheAvailable
+		? crypto.randomUUID()
+		: null;
+	const leaseResult = leaseOwner
+		? await claimLeaseSafely({
+				convex: input.convex,
+				context,
+				leaseOwner,
+				now,
+			})
+		: null;
 
-	if (leaseResult.kind === "cached") {
-		const cachedAfterLease = await loadCachedRecord(input.convex, context);
+	if (leaseResult?.kind === "cached") {
+		const cachedAfterLeaseResult = await loadCachedRecordSafely(
+			input.convex,
+			context,
+		);
+		const cachedAfterLease = cachedAfterLeaseResult.record;
 
 		if (isFreshCachedResult(cachedAfterLease, Date.now())) {
 			logLocalizaEvent("info", "localiza.resolve.cache_hit_after_lease", {
@@ -1069,14 +1719,21 @@ export const resolveIdealistaLocation = async (input: {
 				territoryAdapter: cachedAfterLease.result.territoryAdapter,
 				durationMs: Date.now() - startedAt,
 			});
-			return attachCacheExpiry(
+			const cachedResult = attachCacheExpiry(
 				cachedAfterLease.result,
 				cachedAfterLease.expiresAt,
 			);
+			const historyResult = await attachPropertyHistoryToResult({
+				convex: input.convex,
+				context,
+				result: cachedResult,
+			});
+
+			return historyResult.result;
 		}
 	}
 
-	if (leaseResult.kind === "in_flight") {
+	if (leaseResult?.kind === "in_flight") {
 		logLocalizaEvent("info", "localiza.resolve.waiting_for_in_flight_result", {
 			...buildResolverLogPayload(context),
 		});
@@ -1123,13 +1780,19 @@ export const resolveIdealistaLocation = async (input: {
 
 	const expiresAt =
 		Date.now() + getResultCacheTtlMs(adapterResolution.result.status);
+	const historyResult = await attachPropertyHistoryToResult({
+		convex: input.convex,
+		context,
+		result: adapterResolution.result,
+	});
 
-	const persistedResult = await persistResult({
+	const persistedResult = await persistResultSafely({
 		convex: input.convex,
 		context,
 		leaseOwner,
-		result: adapterResolution.result,
+		result: historyResult.result,
 		normalizedSignals: adapterResolution.normalizedSignals,
+		propertyHistoryKey: historyResult.propertyHistoryKey,
 		now: Date.now(),
 		expiresAt,
 		errorCode: adapterResolution.errorCode,

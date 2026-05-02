@@ -1,14 +1,15 @@
 import { SignOutButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
+import { LockKeyhole, Mail, ShieldAlert } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LockKeyhole, Mail, ShieldAlert } from "lucide-react";
 
 import {
 	getCurrentUserPrimaryEmailAddress,
 	isAllowedAppUser,
 } from "@/lib/app-access";
+import { generalEmail } from "../marketing-data";
 
 export const metadata: Metadata = {
 	title: "Acceso restringido | Casedra",
@@ -24,6 +25,12 @@ export default async function AccessRestrictedPage() {
 	}
 
 	const primaryEmailAddress = getCurrentUserPrimaryEmailAddress(user);
+	const accessRequestBody = primaryEmailAddress
+		? `Hola, quiero activar acceso a Casedra para ${primaryEmailAddress}.`
+		: "Hola, quiero activar acceso a Casedra.";
+	const accessRequestHref = `mailto:${generalEmail}?subject=${encodeURIComponent(
+		"Acceso a Casedra",
+	)}&body=${encodeURIComponent(accessRequestBody)}`;
 
 	return (
 		<main className="min-h-screen bg-background text-foreground">
@@ -40,8 +47,8 @@ export default async function AccessRestrictedPage() {
 						Este espacio de trabajo está limitado por ahora a cuentas aprobadas.
 					</h1>
 					<p className="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">
-						Puedes iniciar sesión, pero solo los correos aprobados pueden
-						entrar en la app por ahora.
+						Puedes iniciar sesión, pero solo los correos aprobados pueden entrar
+						en la app por ahora.
 					</p>
 					{primaryEmailAddress ? (
 						<div className="mt-6 rounded-2xl border border-border/70 bg-muted/25 p-4 text-sm text-muted-foreground">
@@ -52,11 +59,18 @@ export default async function AccessRestrictedPage() {
 						</div>
 					) : null}
 					<div className="mt-8 flex flex-col gap-3 sm:flex-row">
+						<Link
+							href={accessRequestHref}
+							className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-primary/90 active:scale-[0.96]"
+						>
+							<Mail className="h-4 w-4" aria-hidden="true" />
+							Pedir acceso
+						</Link>
 						{user ? (
 							<SignOutButton>
 								<button
 									type="button"
-									className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+									className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-medium text-foreground transition-[background-color,transform] hover:bg-muted/35 active:scale-[0.96]"
 								>
 									Cerrar sesión
 								</button>
@@ -64,14 +78,14 @@ export default async function AccessRestrictedPage() {
 						) : (
 							<Link
 								href="/sign-in"
-								className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+								className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-medium text-foreground transition-[background-color,transform] hover:bg-muted/35 active:scale-[0.96]"
 							>
 								Ir a iniciar sesión
 							</Link>
 						)}
 						<Link
 							href="/"
-							className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/35"
+							className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-medium text-foreground transition-[background-color,transform] hover:bg-muted/35 active:scale-[0.96]"
 						>
 							Volver al sitio
 						</Link>

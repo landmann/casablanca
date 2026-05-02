@@ -17,7 +17,7 @@ Casedra is a Turborepo that hosts the web studio (Next.js), the mobile companion
 - Convex CLI: `pnpm dlx convex -h` (or `npm i -g convex`)
 - Expo CLI: `pnpm dlx expo --help`
 - Stripe CLI (optional, useful for webhook testing)
-- Access to the following services: Convex, fal.ai, Firecrawl, PostHog, Stripe, Vercel
+- Access to the following services: Convex, fal.ai, Firecrawl, Oportunista/RapidAPI, PostHog, Stripe, Vercel
 
 ## Install dependencies
 
@@ -48,6 +48,8 @@ pnpm install
 | `FAL_KEY` | Fal.ai | Server-side only; never expose publicly |
 | `FIRECRAWL_API_KEY` | Firecrawl | Required for the current Firecrawl-only Localiza beta path. `FIRECRAWL_API_API_KEY` and `FIRECRAWL_PLAN_API_KEY` are accepted as Stripe Projects-generated aliases. |
 | `IDEALISTA_API_KEY`, `IDEALISTA_API_SECRET` | Idealista | Reserved for a future Localiza acquisition path; leave unset until official API access is approved and implemented |
+| `OPORTUNISTA_RAPIDAPI_KEY` | Oportunista | RapidAPI key for Idealista listing-level historical price snapshots. `IDEALISTA_HISTORICO_RAPIDAPI_KEY` is accepted as an alias. |
+| `OPORTUNISTA_RAPIDAPI_HOST` | Oportunista | Optional RapidAPI host override. Defaults to `idealista-historico.p.rapidapi.com`. |
 | `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID` | Browserbase | Reserved for a future fallback path; leave unset unless Firecrawl is insufficient and browser automation has compliance approval |
 | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe | Follow the Stripe section below |
 | `POSTHOG_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, `POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_HOST` | PostHog | Host defaults to `https://app.posthog.com` |
@@ -88,6 +90,12 @@ pnpm install
 
 - Grab an API key from [https://www.firecrawl.dev](https://www.firecrawl.dev) and set `FIRECRAWL_API_KEY`. If Stripe Projects generated `FIRECRAWL_API_API_KEY` or `FIRECRAWL_PLAN_API_KEY`, the Localiza adapter will also accept those names.
 - Localiza invokes Firecrawl for Idealista signal acquisition when configured. During beta, `Auto` only attempts Firecrawl; the official Idealista API and Browserbase worker are intentionally disabled until approved and implemented.
+
+## Oportunista
+
+- Subscribe to the Idealista histórico API through RapidAPI and set `OPORTUNISTA_RAPIDAPI_KEY`.
+- Localiza uses Oportunista only after a user-submitted Idealista URL has been resolved to a defensible property-history key. The imported rows are stored as dated `IDEALISTA` market observations with Oportunista provenance and then merged into the property report's histórico de precios.
+- If the key is missing, Localiza still resolves addresses, but rollout readiness remains blocked because the automatic price-history feed is unavailable.
 
 ## Stripe
 

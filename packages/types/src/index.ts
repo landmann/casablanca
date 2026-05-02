@@ -331,6 +331,11 @@ export interface LocalizaReadinessSnapshot {
 		disabledStrategies: LocalizaAcquisitionStrategy[];
 		complianceApprovalRequiredForBrowserWorker: boolean;
 	};
+	marketHistoryProvider: {
+		provider: "oportunista_rapidapi";
+		configured: boolean;
+		refreshIntervalMs: number;
+	};
 	goldenDataset: {
 		summary: LocalizaGoldenSummary;
 		issues: string[];
